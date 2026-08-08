@@ -16,45 +16,30 @@ Every card ships with a full visual editor, raised / sunken / flat surface style
 | Date Picker | `custom:datepicker-card` | Concentric disc-ring date picker. |
 | Time Picker | `custom:timepicker-card` | Concentric disc-ring time picker. |
 
+All seven cards are shipped in a single bundled file, so **installing the repo registers every card automatically** — no manual resource setup.
+
 ## Installation
 
 ### HACS (recommended)
 
 1. In HACS, go to **Frontend** → three-dot menu → **Custom repositories**.
-2. Add this repository URL with category **Dashboard** (Lovelace).
-3. Search for **Neumorphic Cards** and install.
-4. HACS registers the primary resource automatically. Because this is a multi-card suite, add the resources for the cards you use (see below).
+2. Add `https://github.com/dvbit/neumorphic-cards` with category **Dashboard**.
+3. Search for **Neumorphic Cards**, install, and reload when prompted.
+4. Hard-refresh your browser. All seven cards now appear in the card picker with previews — nothing else to configure.
 
 ### Manual
 
-1. Copy the `.js` files you want from [`dist/`](./dist) into `config/www/` on your Home Assistant instance.
-2. Add each as a dashboard resource (**Settings → Dashboards → three-dot menu → Resources**):
+1. Copy [`dist/neumorphic-cards.js`](./dist/neumorphic-cards.js) into `config/www/` on your Home Assistant instance.
+2. Add it as a single dashboard resource (**Settings → Dashboards → three-dot menu → Resources → Add Resource**):
 
 ```yaml
-url: /local/neumorphic-button-card.js
+url: /local/neumorphic-cards.js
 type: module
 ```
 
-Resource URLs for every card:
+3. Hard-refresh the browser. That one resource registers all seven cards.
 
-```yaml
-- url: /local/neumorphic-button-card.js
-  type: module
-- url: /local/neumorphic-slider-card.js
-  type: module
-- url: /local/neumorphic-rotary-slider.js
-  type: module
-- url: /local/neumorphic-container-card.js
-  type: module
-- url: /local/neumorphic-calendar-grid-card.js
-  type: module
-- url: /local/datepicker-card.js
-  type: module
-- url: /local/timepicker-card.js
-  type: module
-```
-
-> When installed via HACS, replace `/local/` with the path HACS assigns (usually `/hacsfiles/neumorphic-cards/`).
+> Prefer individual files? Each card is also available standalone in [`dist/`](./dist) (e.g. `dist/neumorphic-button-card.js`). If you go that route, add a resource for each card you use.
 
 ## Usage
 
@@ -86,6 +71,16 @@ style: raised
 ## Theming
 
 These cards read the standard Home Assistant `ha-card` CSS variables and adapt automatically to light and dark modes. They pair naturally with the [hacs-neumorphic-template](https://github.com/etnlbck/hacs-neumorphic-template) theme but do not require it.
+
+## Development
+
+Each card is a self-contained file in [`dist/`](./dist). To rebuild the combined bundle after editing any card:
+
+```bash
+./build.sh
+```
+
+This wraps each card in its own IIFE and concatenates them into `dist/neumorphic-cards.js`.
 
 ## License
 

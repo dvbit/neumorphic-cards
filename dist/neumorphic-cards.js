@@ -1,0 +1,6737 @@
+/**
+ * Neumorphic Cards — bundled suite
+ * https://github.com/dvbit/neumorphic-cards
+ *
+ * All 7 cards in one file. Each card is wrapped in its own IIFE to isolate
+ * top-level declarations, so a single registered resource loads the whole suite.
+ * Auto-generated — edit the individual files in dist/ and re-bundle.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+ * datepicker-card.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+/**
+ * Neumorphic Date Picker Card
+ *
+ * type: custom:datepicker-card
+ * entity: input_datetime.my_date
+ * year_min: 2020
+ * year_max: 2035
+ * holiday_entity: binary_sensor.is_holiday   # optional boolean entity
+ * holiday_color: "#e07070"                   # cap tint + glow when entity is on
+ * label_major: { text, position, font, size, weight, spacing, transform, color }
+ * label_minor: { text, position, font, size, weight, spacing, transform, color }
+ * value:       { font, size, weight, spacing, transform, color }
+ * icon:        { name, position, size, color }
+ */
+
+/* ─────────────────────────────────────────────────────
+   SHARED EDITOR BASE  (identical to timepicker-card.js)
+───────────────────────────────────────────────────── */
+class NeuCardEditorBase extends HTMLElement {
+  constructor(){super();this.attachShadow({mode:"open"});this._config={};}
+  setConfig(c){this._config=JSON.parse(JSON.stringify(c));this._render();}
+  _fire(){this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true}));}
+  _set(path,value){const parts=path.split(".");let obj=this._config;while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}obj[parts[0]]=value;this._fire();this._render();}
+  _get(path,def=""){const parts=path.split(".");let obj=this._config;for(const k of parts){if(obj==null)return def;obj=obj[k];}return obj??def;}
+  static get FONTS(){return[["","Default"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
+  static get POS(){return["top","bottom","left","right","none"];}
+  static get WEIGHTS(){return["400","500","600","700","800","900"];}
+  static get TRANSFORMS(){return["none","uppercase","lowercase","capitalize","full-width"];}
+  _sel(path,opts,labels){const cur=this._get(path,opts[0]);return`<select data-path="${path}">${opts.map((o,i)=>`<option value="${o}"${o===cur?" selected":""}>${labels?labels[i]:o}</option>`).join("")}</select>`;}
+  _inp(path,ph="",type="text"){return`<input type="${type}" data-path="${path}" value="${this._get(path)}" placeholder="${ph}"/>`;}
+  _colorRow(path){const cur=this._get(path,"")||"#8fa0b8";return`<input type="color" data-path="${path}" value="${cur}"/><input type="text" data-path="${path}" value="${this._get(path)}" placeholder="blank = theme"/>`;}
+  _fontSel(path){return this._sel(path,NeuCardEditorBase.FONTS.map(f=>f[0]),NeuCardEditorBase.FONTS.map(f=>f[1]));}
+  _section(title,...rows){return`<div class="section"><div class="section-title">${title}</div>${rows.join("")}</div>`;}
+  _row(label,content){return`<div class="row"><label>${label}</label><div class="ctrl">${content}</div></div>`;}
+  _typoRows(key){return[this._row("Font",this._fontSel(`${key}.font`)),this._row("Size",this._inp(`${key}.size`,"1rem")),this._row("Weight",this._sel(`${key}.weight`,NeuCardEditorBase.WEIGHTS)),this._row("Spacing",this._inp(`${key}.spacing`,"0em")),this._row("Transform",this._sel(`${key}.transform`,NeuCardEditorBase.TRANSFORMS)),this._row("Color",this._colorRow(`${key}.color`))];}
+  _labelSection(key,title,ph){return this._section(title,this._row("Text",this._inp(`${key}.text`,ph)),this._row("Position",this._sel(`${key}.position`,NeuCardEditorBase.POS)),...this._typoRows(key));}
+  _valueSection(key="value",title="Value Display"){return this._section(title,...this._typoRows(key));}
+  _iconSection(hint){return this._section("Icon",this._row("MDI Icon",this._inp("icon.name","mdi:calendar")),`<div class="hint">${hint}</div>`,this._row("Position",this._sel("icon.position",NeuCardEditorBase.POS)),this._row("Size",this._inp("icon.size","1.4rem")),this._row("Color",this._colorRow("icon.color")));}
+  _editorCSS(){return`<style>
+    :host{display:block;font-family:'Segoe UI',sans-serif;font-size:13px;color:#2d3a52;}
+    .editor{display:flex;flex-direction:column;gap:16px;padding:4px 0;}
+    .section{background:#f0f3f7;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+    .section-title{font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8fa0b8;margin-bottom:2px;}
+    .row{display:grid;grid-template-columns:120px 1fr;align-items:center;gap:8px;}
+    label{font-size:.78rem;font-weight:600;color:#5a6a80;white-space:nowrap;}
+    .ctrl{display:flex;align-items:center;gap:6px;}
+    input,select{width:100%;padding:6px 10px;border:1.5px solid #d0d8e8;border-radius:8px;background:#fff;font-family:inherit;font-size:.8rem;color:#2d3a52;outline:none;transition:border-color .15s;box-sizing:border-box;}
+    input:focus,select:focus{border-color:#5b8dee;}
+    input[type=color]{padding:2px 4px;width:44px;min-width:44px;height:32px;cursor:pointer;}
+    input[type=color]+input[type=text]{flex:1;}
+    input[type=number]{-moz-appearance:textfield;}
+    .hint{font-size:.68rem;color:#aab8cc;margin-top:-4px;grid-column:1/-1;}
+  </style>`;}
+  _bindInputs(){
+    this.shadowRoot.querySelectorAll("[data-path]").forEach(el=>{
+      const update=e=>{
+        const val=el.type==="checkbox"?String(el.checked):el.value;
+        this._set(e.target.dataset.path,val);
+      };
+      el.addEventListener("change",update);
+      if(el.tagName==="INPUT"&&el.type!=="color"&&el.type!=="checkbox")
+        el.addEventListener("input",update);
+    });
+  }
+}
+
+/* ─────────────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────────────── */
+const MONTHS_SHORT=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function daysInMonth(m,y){return new Date(y,m,0).getDate();}
+function clampDay(d,m,y){return Math.min(d,daysInMonth(m,y));}
+function _typoStyle(cfg,defaults={}){
+  return[(cfg?.font||defaults.font)?`font-family:${cfg?.font||defaults.font}`:"",
+    (cfg?.size||defaults.size)?`font-size:${cfg?.size||defaults.size}`:"",
+    (cfg?.weight||defaults.weight)?`font-weight:${cfg?.weight||defaults.weight}`:"",
+    (cfg?.spacing||defaults.spacing)?`letter-spacing:${cfg?.spacing||defaults.spacing}`:"",
+    (cfg?.transform&&cfg.transform!=="none")?`text-transform:${cfg.transform}`:"",
+    (cfg?.color||defaults.color)?`color:${cfg?.color||defaults.color}`:"",
+  ].filter(Boolean).join(";");
+}
+
+/* ─────────────────────────────────────────────────────
+   CARD
+───────────────────────────────────────────────────── */
+class DatepickerCard extends HTMLElement {
+  constructor(){
+    super();this.attachShadow({mode:"open"});
+    this._config={};this._hass=null;
+    const now=new Date();
+    this._day=now.getDate();this._month=now.getMonth()+1;this._year=now.getFullYear();
+    this._holiday=false;
+    this._expanded=false;this._active=null;this._rendered=false;
+  }
+
+  static getConfigElement(){return document.createElement("datepicker-card-editor");}
+  static getStubConfig(){const y=new Date().getFullYear();return{
+    entity:"",year_min:y-2,year_max:y+10,
+    hide_border:false,
+    holiday_entity:"",holiday_color:"#e07070",
+    label_major:{text:"Date",position:"top",    font:"",size:"0.78rem",weight:"800",spacing:"0.18em",transform:"uppercase",color:""},
+    label_minor:{text:"",    position:"bottom", font:"",size:"0.62rem",weight:"600",spacing:"0.06em",transform:"none",     color:""},
+    value:      {            font:"",size:"1.3rem", weight:"900",spacing:"0px",   transform:"none",     color:""},
+    icon:       {name:"",   position:"none",   size:"1.4rem",color:""},
+  };}
+
+  setConfig(c){this._config=c;if(this._rendered){this._teardown();this._rendered=false;}}
+  set hass(h){this._hass=h;if(!this._rendered){this._render();this._rendered=true;}this._syncEntity();this._watchHoliday();}
+  getCardSize(){return 3;}
+
+  _pad(n){return String(n).padStart(2,"0");}
+  _yearMin(){return parseInt(this._config.year_min)||new Date().getFullYear()-2;}
+  _yearMax(){return parseInt(this._config.year_max)||new Date().getFullYear()+10;}
+  _yearRange(){return this._yearMax()-this._yearMin()+1;}
+
+  _angleFrom(e,el){const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;const px=e.touches?e.touches[0].clientX:e.clientX,py=e.touches?e.touches[0].clientY:e.clientY;let a=Math.atan2(py-cy,px-cx)*180/Math.PI+90;return a<0?a+360:a;}
+  _radiusRatio(e,el){const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;const px=e.touches?e.touches[0].clientX:e.clientX,py=e.touches?e.touches[0].clientY:e.clientY;return Math.sqrt((px-cx)**2+(py-cy)**2)/(r.width/2);}
+  _teardown(){if(this._mv){window.removeEventListener("mousemove",this._mv);window.removeEventListener("touchmove",this._mv);}if(this._up){window.removeEventListener("mouseup",this._up);window.removeEventListener("touchend",this._up);}}
+
+  _syncEntity(){
+    if(!this._config.entity||!this._hass)return;
+    const s=this._hass.states[this._config.entity];
+    if(!s||s.state==="unavailable")return;
+    const parts=s.state.split(" ")[0].split("-");
+    if(parts.length<3)return;
+    this._year=parseInt(parts[0],10);this._month=parseInt(parts[1],10);this._day=parseInt(parts[2],10);
+    this._redraw();
+  }
+
+  /* ── holiday entity watcher ── */
+  _watchHoliday(){
+    if(!this._config.holiday_entity||!this._hass)return;
+    const s=this._hass.states[this._config.holiday_entity];
+    const wasHoliday=this._holiday;
+    this._holiday=s?.state==="on";
+    if(this._holiday!==wasHoliday) this._applyHoliday();
+  }
+
+  _applyHoliday(){
+    const cap=this.shadowRoot.getElementById("cap");
+    if(!cap)return;
+    const color=this._config.holiday_color||"#e07070";
+    if(this._holiday){
+      // hex → rgba for tint
+      const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
+      cap.style.background=`rgba(${r},${g},${b},0.12)`;
+      cap.style.boxShadow=`inset 5px 5px 12px var(--sh),inset -5px -5px 12px var(--light),0 0 0 2px rgba(${r},${g},${b},0.35)`;
+      const dd=this.shadowRoot.getElementById("D-day");
+      if(dd) dd.style.color=color;
+    } else {
+      cap.style.background="";
+      cap.style.boxShadow="";
+      const dd=this.shadowRoot.getElementById("D-day");
+      if(dd) dd.style.color="";
+    }
+  }
+
+  _saveEntity(){if(!this._config.entity||!this._hass)return;this._hass.callService("input_datetime","set_datetime",{entity_id:this._config.entity,date:`${this._year}-${this._pad(this._month)}-${this._pad(this._day)}`});}
+
+  _iconEl(name,size,color){if(!name)return"";return`<ha-icon icon="${name}" style="--mdc-icon-size:${size};color:${color||"var(--muted)"};display:flex;align-items:center;"></ha-icon>`;}
+  _labelHTML(cfgL,cls){const pos=cfgL?.position||"none";if(pos==="none"||!cfgL?.text)return{pos,html:""};return{pos,html:`<span class="${cls}" style="${_typoStyle(cfgL)}">${cfgL.text}</span>`};}
+
+  _render(){
+    const cfg=this._config,lma=cfg.label_major||{},lmi=cfg.label_minor||{},ico=cfg.icon||{};
+    const slots={top:[],bottom:[],left:[],right:[]};
+    const push=(pos,html)=>{if(pos&&pos!=="none"&&html&&slots[pos])slots[pos].push(html);};
+    const ma=this._labelHTML(lma,"lbl-major");push(ma.pos,ma.html);
+    const mi=this._labelHTML(lmi,"lbl-minor");push(mi.pos,mi.html);
+    if(ico.name&&ico.position&&ico.position!=="none")push(ico.position,this._iconEl(ico.name,ico.size||"1.4rem",ico.color||""));
+    const sh=a=>a.join("");
+    const val=cfg.value||{};
+    const valSty=_typoStyle(val,{size:"1.3rem",weight:"900"});
+    const moSty =_typoStyle(val,{size:".64rem",weight:"700",spacing:".06em"});
+    const yrSty =_typoStyle(val,{size:".58rem",weight:"600"});
+    const hideBorder=cfg.hide_border===true||cfg.hide_border==="true";
+
+    /*
+     * Corona geometry (viewBox 260×260, cx=cy=130):
+     *   day   corona: cap edge r=40  → r-day  inner edge r=58   span=18px
+     *   month corona: r-day  outer r=58 → r-month inner edge r=91  span=33px
+     *   year  corona: r-month outer r=91 → r-year  inner edge r=130 span=39px
+     * Lines run the full width of each corona.
+     */
+
+    this.shadowRoot.innerHTML=`
+    <style>
+      :host{display:block;}
+      .card{
+        --bg:#e4e9f0;--light:#fff;--sh:#b8c0cc;--text:#2d3a52;--muted:#8fa0b8;
+        --c-day:#9aafc8;--c-month:#a8b8a8;--c-year:#b0a8c0;
+        background:${hideBorder?"transparent":"var(--bg)"};border-radius:28px;
+        box-shadow:${hideBorder?"none":"10px 10px 26px var(--sh),-10px -10px 26px var(--light)"};
+        padding:${hideBorder?"0":"26px 18px 30px"};
+        display:grid;grid-template-areas:"top""mid""bot";grid-template-rows:auto 1fr auto;
+        align-items:center;justify-items:center;gap:10px;font-family:'Nunito','Segoe UI',sans-serif;
+      }
+      .s-top{grid-area:top;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
+      .s-bot{grid-area:bot;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
+      .mid{grid-area:mid;display:flex;align-items:center;justify-content:center;gap:14px;}
+      .s-left{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:4px;}
+      .s-right{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:4px;}
+      .lbl-major{font-size:.78rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);}
+      .lbl-minor{font-size:.62rem;font-weight:600;letter-spacing:.08em;color:var(--muted);opacity:.8;}
+      .stage{position:relative;width:260px;height:260px;touch-action:none;flex-shrink:0;}
+      .ring{position:absolute;border-radius:50%;background:var(--bg);top:50%;left:50%;transform:translate(-50%,-50%) scale(0);opacity:0;pointer-events:none;transition:transform .65s cubic-bezier(.34,1.28,.64,1),opacity .5s ease;}
+      .ring.on{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:all;cursor:grab;}
+      .ring.on:active{cursor:grabbing;}
+      .ring.dragging{outline:2px solid rgba(91,141,238,.18);outline-offset:-2px;}
+      .r-year{width:260px;height:260px;box-shadow:9px 9px 22px var(--sh),-9px -9px 22px var(--light);transition-delay:0s;}
+      .r-month{width:182px;height:182px;z-index:2;transition-delay:.09s;box-shadow:7px 7px 16px var(--sh),-7px -7px 16px var(--light),inset 2px 2px 5px var(--light),inset -2px -2px 5px var(--sh);}
+      .r-day{width:116px;height:116px;z-index:4;transition-delay:.18s;box-shadow:5px 5px 12px var(--sh),-5px -5px 12px var(--light),inset 2px 2px 5px var(--light),inset -2px -2px 5px var(--sh);}
+      .cap{
+        position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+        width:80px;height:80px;border-radius:50%;background:var(--bg);
+        box-shadow:inset 5px 5px 12px var(--sh),inset -5px -5px 12px var(--light);
+        z-index:10;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:1px;cursor:pointer;user-select:none;
+        transition:background .35s ease,box-shadow .35s ease;
+      }
+      .cap:active{box-shadow:inset 3px 3px 7px var(--sh),inset -3px -3px 7px var(--light);}
+      .cap-d,.cap-m,.cap-y{pointer-events:none;line-height:1;}
+      .cap-d{color:var(--text);transition:color .35s ease;}
+      .cap-m,.cap-y{color:var(--muted);}
+      svg.ov{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:9;opacity:0;transition:opacity .4s ease .25s;}
+      svg.ov.on{opacity:1;}
+      .l-day{stroke:var(--c-day);stroke-width:2.5;stroke-linecap:round;opacity:.85;}
+      .l-month{stroke:var(--c-month);stroke-width:2.5;stroke-linecap:round;opacity:.85;}
+      .l-year{stroke:var(--c-year);stroke-width:2.5;stroke-linecap:round;opacity:.85;}
+      .t-day{stroke:var(--c-day);stroke-width:1;opacity:.3;}
+      .t-month{stroke:var(--c-month);stroke-width:1;opacity:.3;}
+      .t-year{stroke:var(--c-year);stroke-width:1;opacity:.25;}
+    </style>
+    <div class="card">
+      <div class="s-top">${sh(slots.top)}</div>
+      <div class="mid">
+        <div class="s-left">${sh(slots.left)}</div>
+        <div class="stage" id="stage">
+          <div class="ring r-year"  id="R-year"></div>
+          <div class="ring r-month" id="R-month"></div>
+          <div class="ring r-day"   id="R-day"></div>
+          <svg class="ov" id="SV" viewBox="0 0 260 260">
+            <g id="G-year-ticks"></g><g id="G-month-ticks"></g><g id="G-day-ticks"></g>
+            <line class="l-year"  id="L-year"  x1="130" y1="0"   x2="130" y2="39"/>
+            <line class="l-month" id="L-month" x1="130" y1="39"  x2="130" y2="72"/>
+            <line class="l-day"   id="L-day"   x1="130" y1="72"  x2="130" y2="90"/>
+          </svg>
+          <div class="cap" id="cap">
+            <span class="cap-d" id="D-day"   style="${valSty}">01</span>
+            <span class="cap-m" id="D-month" style="${moSty}">Jan</span>
+            <span class="cap-y" id="D-year"  style="${yrSty}">2024</span>
+          </div>
+        </div>
+        <div class="s-right">${sh(slots.right)}</div>
+      </div>
+      <div class="s-bot">${sh(slots.bottom)}</div>
+    </div>`;
+
+    this._drawTicks();this._redraw();this._bindEvents();
+    // apply holiday state immediately after render
+    this._watchHoliday();
+  }
+
+  _drawTicks(){
+    const sh=this.shadowRoot,cx=130,cy=130;
+    const mk=(g,rad,r1,r2,sw,cls)=>{const l=document.createElementNS("http://www.w3.org/2000/svg","line");l.setAttribute("x1",cx+r1*Math.cos(rad));l.setAttribute("y1",cy+r1*Math.sin(rad));l.setAttribute("x2",cx+r2*Math.cos(rad));l.setAttribute("y2",cy+r2*Math.sin(rad));l.setAttribute("stroke-width",sw);l.setAttribute("class",cls);g.appendChild(l);};
+    const yr=this._yearRange(),yc=Math.min(yr,60);
+    const gY=sh.getElementById("G-year-ticks");
+    for(let i=0;i<yc;i++){const rad=(i/yc*360-90)*Math.PI/180,maj=yr<=20||i%Math.max(1,Math.floor(yc/12))===0;mk(gY,rad,maj?120:123,128,maj?2:1,"t-year");}
+    const gM=sh.getElementById("G-month-ticks");
+    for(let i=0;i<12;i++)mk(gM,(i/12*360-90)*Math.PI/180,82,90,2,"t-month");
+    const gD=sh.getElementById("G-day-ticks");
+    for(let i=0;i<31;i++){const rad=(i/31*360-90)*Math.PI/180,maj=i%5===0;mk(gD,rad,maj?49:51,57,maj?2:1,"t-day");}
+  }
+
+  _redraw(){
+    const sh=this.shadowRoot,cx=130,cy=130;
+    const dd=sh.getElementById("D-day");if(dd)dd.textContent=this._pad(this._day);
+    const dm=sh.getElementById("D-month");if(dm)dm.textContent=MONTHS_SHORT[this._month-1];
+    const dy=sh.getElementById("D-year");if(dy)dy.textContent=this._year;
+
+    // year line: full corona r91 → r130
+    const yFrac=(this._year-this._yearMin())/Math.max(1,this._yearRange()-1);
+    const yRad=(yFrac*360-90)*Math.PI/180;
+    const lY=sh.getElementById("L-year");
+    if(lY){lY.setAttribute("x1",cx+91*Math.cos(yRad));lY.setAttribute("y1",cy+91*Math.sin(yRad));
+            lY.setAttribute("x2",cx+130*Math.cos(yRad));lY.setAttribute("y2",cy+130*Math.sin(yRad));}
+
+    // month line: full corona r58 → r91
+    const mRad=((this._month-1)/12*360-90)*Math.PI/180;
+    const lM=sh.getElementById("L-month");
+    if(lM){lM.setAttribute("x1",cx+58*Math.cos(mRad));lM.setAttribute("y1",cy+58*Math.sin(mRad));
+            lM.setAttribute("x2",cx+91*Math.cos(mRad));lM.setAttribute("y2",cy+91*Math.sin(mRad));}
+
+    // day line: full corona r40 → r58
+    const maxD=daysInMonth(this._month,this._year);
+    const dRad=((this._day-1)/maxD*360-90)*Math.PI/180;
+    const lD=sh.getElementById("L-day");
+    if(lD){lD.setAttribute("x1",cx+40*Math.cos(dRad));lD.setAttribute("y1",cy+40*Math.sin(dRad));
+            lD.setAttribute("x2",cx+58*Math.cos(dRad));lD.setAttribute("y2",cy+58*Math.sin(dRad));}
+  }
+
+  _expand(){const sh=this.shadowRoot;this._expanded=true;["R-year","R-month","R-day"].forEach(id=>sh.getElementById(id)?.classList.add("on"));sh.getElementById("SV")?.classList.add("on");}
+  _collapse(){const sh=this.shadowRoot;this._expanded=false;this._active=null;["R-year","R-month","R-day"].forEach(id=>{const e=sh.getElementById(id);e?.classList.remove("on");e?.classList.remove("dragging");});sh.getElementById("SV")?.classList.remove("on");this._saveEntity();}
+  _zone(r){if(r<0.22)return null;if(r<0.48)return"day";if(r<0.72)return"month";return"year";}
+
+  _bindEvents(){
+    const sh=this.shadowRoot,stage=sh.getElementById("stage"),cap=sh.getElementById("cap");
+    cap.addEventListener("click",e=>{e.stopPropagation();this._expanded?this._collapse():this._expand();});
+    const hl=zone=>{const map={day:"R-day",month:"R-month",year:"R-year"};["R-day","R-month","R-year"].forEach(id=>sh.getElementById(id)?.classList.remove("dragging"));if(zone&&map[zone])sh.getElementById(map[zone])?.classList.add("dragging");};
+    const onStart=e=>{if(!this._expanded)return;const z=this._zone(this._radiusRatio(e,stage));if(!z)return;this._active=z;hl(z);e.preventDefault();};
+    this._mv=e=>{
+      if(!this._active)return;e.preventDefault();const a=this._angleFrom(e,stage);
+      if(this._active==="year"){const range=this._yearRange(),idx=Math.round(a/360*range)%range;this._year=this._yearMin()+Math.max(0,Math.min(range-1,idx));this._day=clampDay(this._day,this._month,this._year);}
+      else if(this._active==="month"){this._month=Math.max(1,Math.min(12,Math.round(a/360*12)||1));this._day=clampDay(this._day,this._month,this._year);}
+      else{const maxD=daysInMonth(this._month,this._year);this._day=Math.max(1,Math.min(maxD,Math.round(a/360*maxD)||1));}
+      this._redraw();
+    };
+    this._up=()=>{hl(null);this._active=null;};
+    stage.addEventListener("mousedown",onStart);stage.addEventListener("touchstart",onStart,{passive:false});
+    window.addEventListener("mousemove",this._mv);window.addEventListener("touchmove",this._mv,{passive:false});
+    window.addEventListener("mouseup",this._up);window.addEventListener("touchend",this._up);
+  }
+}
+
+customElements.define("datepicker-card",DatepickerCard);
+
+/* ─────────────────────────────────────────────────────
+   EDITOR
+───────────────────────────────────────────────────── */
+class DatepickerCardEditor extends NeuCardEditorBase {
+  _render(){
+    const y=new Date().getFullYear();
+    this.shadowRoot.innerHTML=`
+      ${this._editorCSS()}
+      <div class="editor">
+        ${this._section("Entity & Year Range",
+          this._row("Entity",      this._inp("entity","input_datetime.my_date")),
+          this._row("Year Min",    this._inp("year_min",y-2,"number")),
+          this._row("Year Max",    this._inp("year_max",y+10,"number")),
+          this._row("Hide Border", `<input type="checkbox" data-path="hide_border"${this._get("hide_border")==="true"||this._get("hide_border")===true?" checked":""}/>`),
+        )}
+        ${this._section("Holiday",
+          this._row("Flag Entity", this._inp("holiday_entity","binary_sensor.is_holiday")),
+          `<div class="hint">boolean entity — when on, cap is tinted</div>`,
+          this._row("Highlight Color", this._colorRow("holiday_color")),
+        )}
+        ${this._labelSection("label_major","Major Label","e.g. Pick a date")}
+        ${this._labelSection("label_minor","Minor Label","e.g. Tap to expand")}
+        ${this._valueSection("value","Value Display")}
+        ${this._iconSection("mdi:calendar · mdi:calendar-month · mdi:calendar-star")}
+      </div>`;
+    this._bindInputs();
+  }
+}
+
+customElements.define("datepicker-card-editor",DatepickerCardEditor);
+
+window.customCards=window.customCards||[];
+window.customCards.push({type:"datepicker-card",name:"Neumorphic Date Picker",description:"Three-ring expanding neumorphic date picker with holiday highlight.",preview:true});
+
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+ * timepicker-card.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+/**
+ * Neumorphic Time Picker Card
+ *
+ * type: custom:timepicker-card
+ * entity: input_datetime.alarm
+ * am_pm: true                  # false = 24h (default), true = 12h with AM/PM toggle
+ * label_major:
+ *   text: Alarm
+ *   position: top              # top | bottom | left | right | none
+ *   font: ""                   # blank = Nunito
+ *   size: 0.78rem
+ *   weight: 800
+ *   spacing: 0.18em
+ *   transform: uppercase       # none | uppercase | lowercase | capitalize | full-width
+ *   color: ""                  # blank = theme muted
+ * label_minor:
+ *   text: Morning routine
+ *   position: bottom
+ *   font: ""; size: 0.62rem; weight: 600; spacing: 0.06em; transform: none; color: ""
+ * value:
+ *   font: ""; size: 1.1rem; weight: 900; spacing: 1px; transform: none; color: ""
+ * ampm:                        # style for the AM/PM badge (only used when am_pm: true)
+ *   font: ""; size: 0.55rem; weight: 800; spacing: 0.08em; transform: uppercase; color: ""
+ * icon:
+ *   name: mdi:alarm; position: left; size: 1.4rem; color: ""
+ */
+
+/* ─────────────────────────────────────────────────────
+   SHARED EDITOR BASE
+───────────────────────────────────────────────────── */
+class NeuCardEditorBase extends HTMLElement {
+  constructor() { super(); this.attachShadow({ mode:"open" }); this._config = {}; }
+  setConfig(c) { this._config = JSON.parse(JSON.stringify(c)); this._render(); }
+  _fire() { this.dispatchEvent(new CustomEvent("config-changed",{ detail:{ config:this._config }, bubbles:true, composed:true })); }
+  _set(path, value) {
+    const parts=path.split("."); let obj=this._config;
+    while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}
+    obj[parts[0]]=value; this._fire(); this._render();
+  }
+  _get(path, def="") {
+    const parts=path.split("."); let obj=this._config;
+    for(const k of parts){if(obj==null)return def;obj=obj[k];}
+    return obj??def;
+  }
+  static get FONTS(){return[["","Default"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
+  static get POS(){return["top","bottom","left","right","none"];}
+  static get WEIGHTS(){return["400","500","600","700","800","900"];}
+  static get TRANSFORMS(){return["none","uppercase","lowercase","capitalize","full-width"];}
+
+  _sel(path,opts,labels){const cur=this._get(path,opts[0]);return`<select data-path="${path}">${opts.map((o,i)=>`<option value="${o}"${o===cur?" selected":""}>${labels?labels[i]:o}</option>`).join("")}</select>`;}
+  _inp(path,ph="",type="text"){return`<input type="${type}" data-path="${path}" value="${this._get(path)}" placeholder="${ph}"/>`;}
+  _colorRow(path){const cur=this._get(path,"")||"#8fa0b8";return`<input type="color" data-path="${path}" value="${cur}"/><input type="text" data-path="${path}" value="${this._get(path)}" placeholder="blank = theme"/>`;}
+  _fontSel(path){return this._sel(path,NeuCardEditorBase.FONTS.map(f=>f[0]),NeuCardEditorBase.FONTS.map(f=>f[1]));}
+  _section(title,...rows){return`<div class="section"><div class="section-title">${title}</div>${rows.join("")}</div>`;}
+  _row(label,content){return`<div class="row"><label>${label}</label><div class="ctrl">${content}</div></div>`;}
+  _typoRows(key){return[
+    this._row("Font",      this._fontSel(`${key}.font`)),
+    this._row("Size",      this._inp(`${key}.size`,"1rem")),
+    this._row("Weight",    this._sel(`${key}.weight`,NeuCardEditorBase.WEIGHTS)),
+    this._row("Spacing",   this._inp(`${key}.spacing`,"0em")),
+    this._row("Transform", this._sel(`${key}.transform`,NeuCardEditorBase.TRANSFORMS)),
+    this._row("Color",     this._colorRow(`${key}.color`)),
+  ];}
+  _labelSection(key,title,ph){return this._section(title,this._row("Text",this._inp(`${key}.text`,ph)),this._row("Position",this._sel(`${key}.position`,NeuCardEditorBase.POS)),...this._typoRows(key));}
+  _valueSection(key="value",title="Value Display"){return this._section(title,...this._typoRows(key));}
+  _iconSection(hint){return this._section("Icon",this._row("MDI Icon",this._inp("icon.name","mdi:alarm")),`<div class="hint">${hint}</div>`,this._row("Position",this._sel("icon.position",NeuCardEditorBase.POS)),this._row("Size",this._inp("icon.size","1.4rem")),this._row("Color",this._colorRow("icon.color")));}
+  _editorCSS(){return`<style>
+    :host{display:block;font-family:'Segoe UI',sans-serif;font-size:13px;color:#2d3a52;}
+    .editor{display:flex;flex-direction:column;gap:16px;padding:4px 0;}
+    .section{background:#f0f3f7;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+    .section-title{font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8fa0b8;margin-bottom:2px;}
+    .row{display:grid;grid-template-columns:120px 1fr;align-items:center;gap:8px;}
+    label{font-size:.78rem;font-weight:600;color:#5a6a80;white-space:nowrap;}
+    .ctrl{display:flex;align-items:center;gap:6px;}
+    input,select{width:100%;padding:6px 10px;border:1.5px solid #d0d8e8;border-radius:8px;background:#fff;font-family:inherit;font-size:.8rem;color:#2d3a52;outline:none;transition:border-color .15s;box-sizing:border-box;}
+    input:focus,select:focus{border-color:#5b8dee;}
+    input[type=color]{padding:2px 4px;width:44px;min-width:44px;height:32px;cursor:pointer;}
+    input[type=color]+input[type=text]{flex:1;}
+    input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#5b8dee;}
+    input[type=number]{-moz-appearance:textfield;}
+    .hint{font-size:.68rem;color:#aab8cc;margin-top:-4px;grid-column:1/-1;}
+  </style>`;}
+  _bindInputs(){
+    this.shadowRoot.querySelectorAll("[data-path]").forEach(el=>{
+      const update=e=>{
+        const val=el.type==="checkbox"?String(el.checked):el.value;
+        this._set(el.dataset.path,val);
+      };
+      el.addEventListener("change",update);
+      if(el.tagName==="INPUT"&&el.type!=="color"&&el.type!=="checkbox")
+        el.addEventListener("input",update);
+    });
+  }
+}
+
+/* ─────────────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────────────── */
+function _typoStyle(cfg,defaults={}){
+  return[
+    (cfg?.font    ||defaults.font)    ?`font-family:${cfg?.font    ||defaults.font}`:"",
+    (cfg?.size    ||defaults.size)    ?`font-size:${cfg?.size      ||defaults.size}`:"",
+    (cfg?.weight  ||defaults.weight)  ?`font-weight:${cfg?.weight  ||defaults.weight}`:"",
+    (cfg?.spacing ||defaults.spacing) ?`letter-spacing:${cfg?.spacing||defaults.spacing}`:"",
+    (cfg?.transform&&cfg.transform!=="none")?`text-transform:${cfg.transform}`:"",
+    (cfg?.color   ||defaults.color)   ?`color:${cfg?.color         ||defaults.color}`:"",
+  ].filter(Boolean).join(";");
+}
+
+/* ─────────────────────────────────────────────────────
+   CARD
+───────────────────────────────────────────────────── */
+class TimepickerCard extends HTMLElement {
+  constructor(){
+    super(); this.attachShadow({mode:"open"});
+    this._config={}; this._hass=null;
+    this._h=new Date().getHours(); this._m=new Date().getMinutes();
+    this._pm=this._h>=12;          // tracks AM/PM in 12h mode
+    this._expanded=false; this._active=null; this._rendered=false;
+  }
+
+  static getConfigElement(){return document.createElement("timepicker-card-editor");}
+  static getStubConfig(){return{
+    entity:"", am_pm:false, hide_border:false,
+    label_major:{text:"Time", position:"top",    font:"",size:"0.78rem",weight:"800",spacing:"0.18em",transform:"uppercase",color:""},
+    label_minor:{text:"",     position:"bottom", font:"",size:"0.62rem",weight:"600",spacing:"0.06em",transform:"none",     color:""},
+    value:      {             font:"",size:"1.1rem", weight:"900",spacing:"1px",   transform:"none",     color:""},
+    ampm:       {             font:"",size:"0.55rem",weight:"800",spacing:"0.08em",transform:"uppercase",color:""},
+    icon:       {name:"",     position:"none",   size:"1.4rem",color:""},
+  };}
+
+  setConfig(c){this._config=c;if(this._rendered){this._teardown();this._rendered=false;}}
+  set hass(h){this._hass=h;if(!this._rendered){this._render();this._rendered=true;}this._syncEntity();this._watchHass();}
+  getCardSize(){return 3;}
+
+  _pad(n){return String(n).padStart(2,"0");}
+  _is12h(){return this._config.am_pm===true||this._config.am_pm==="true";}
+
+  _angleFrom(e,el){
+    const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const px=e.touches?e.touches[0].clientX:e.clientX,py=e.touches?e.touches[0].clientY:e.clientY;
+    let a=Math.atan2(py-cy,px-cx)*180/Math.PI+90;return a<0?a+360:a;
+  }
+  _radiusRatio(e,el){
+    const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const px=e.touches?e.touches[0].clientX:e.clientX,py=e.touches?e.touches[0].clientY:e.clientY;
+    return Math.sqrt((px-cx)**2+(py-cy)**2)/(r.width/2);
+  }
+  _teardown(){
+    if(this._mv){window.removeEventListener("mousemove",this._mv);window.removeEventListener("touchmove",this._mv);}
+    if(this._up){window.removeEventListener("mouseup",this._up);window.removeEventListener("touchend",this._up);}
+  }
+
+  _syncEntity(){
+    if(!this._config.entity||!this._hass)return;
+    const s=this._hass.states[this._config.entity];
+    if(!s||s.state==="unavailable")return;
+    const p=s.state.split(":");
+    this._h=parseInt(p[0],10); this._m=parseInt(p[1],10);
+    this._pm=this._h>=12;
+    this._redraw();
+  }
+
+  _watchHass(){
+    // no extra entity to watch for time card — placeholder for consistency
+  }
+
+  _saveEntity(){
+    if(!this._config.entity||!this._hass)return;
+    this._hass.callService("input_datetime","set_datetime",{
+      entity_id:this._config.entity,
+      time:`${this._pad(this._h)}:${this._pad(this._m)}:00`,
+    });
+  }
+
+  _iconEl(name,size,color){
+    if(!name)return"";
+    return`<ha-icon icon="${name}" style="--mdc-icon-size:${size};color:${color||"var(--muted)"};display:flex;align-items:center;"></ha-icon>`;
+  }
+  _labelHTML(cfgL,cls){
+    const pos=cfgL?.position||"none";
+    if(pos==="none"||!cfgL?.text)return{pos,html:""};
+    return{pos,html:`<span class="${cls}" style="${_typoStyle(cfgL)}">${cfgL.text}</span>`};
+  }
+
+  /* ── render ── */
+  _render(){
+    const cfg=this._config,lma=cfg.label_major||{},lmi=cfg.label_minor||{},ico=cfg.icon||{};
+    const slots={top:[],bottom:[],left:[],right:[]};
+    const push=(pos,html)=>{if(pos&&pos!=="none"&&html&&slots[pos])slots[pos].push(html);};
+    const ma=this._labelHTML(lma,"lbl-major");push(ma.pos,ma.html);
+    const mi=this._labelHTML(lmi,"lbl-minor");push(mi.pos,mi.html);
+    if(ico.name&&ico.position&&ico.position!=="none")
+      push(ico.position,this._iconEl(ico.name,ico.size||"1.4rem",ico.color||""));
+    const sh=a=>a.join("");
+    const valSty=_typoStyle(cfg.value||{},{size:"1.1rem",weight:"900",spacing:"1px"});
+    const ampmSty=_typoStyle(cfg.ampm||{},{size:"0.55rem",weight:"800",spacing:"0.08em",transform:"uppercase"});
+    const is12=this._is12h();
+    const hideBorder=cfg.hide_border===true||cfg.hide_border==="true";
+
+    this.shadowRoot.innerHTML=`
+    <style>
+      :host{display:block;}
+      .card{
+        --bg:#e4e9f0;--light:#fff;--sh:#b8c0cc;--text:#2d3a52;--muted:#8fa0b8;
+        --rh:#9aafc8;--rm:#b0a8c0;
+        background:${hideBorder?"transparent":"var(--bg)"};border-radius:28px;
+        box-shadow:${hideBorder?"none":"10px 10px 26px var(--sh),-10px -10px 26px var(--light)"};
+        padding:${hideBorder?"0":"26px 18px 30px"};
+        display:grid;grid-template-areas:"top""mid""bot";grid-template-rows:auto 1fr auto;
+        align-items:center;justify-items:center;gap:10px;font-family:'Nunito','Segoe UI',sans-serif;
+      }
+      .s-top{grid-area:top;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
+      .s-bot{grid-area:bot;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
+      .mid{grid-area:mid;display:flex;align-items:center;justify-content:center;gap:14px;}
+      .s-left{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:4px;}
+      .s-right{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:4px;}
+      .lbl-major{font-size:.78rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);}
+      .lbl-minor{font-size:.62rem;font-weight:600;letter-spacing:.08em;color:var(--muted);opacity:.8;}
+      .stage{position:relative;width:240px;height:240px;touch-action:none;flex-shrink:0;}
+      .ring{position:absolute;border-radius:50%;background:var(--bg);top:50%;left:50%;transform:translate(-50%,-50%) scale(0);opacity:0;pointer-events:none;transition:transform .6s cubic-bezier(.34,1.28,.64,1),opacity .45s ease;}
+      .ring.on{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:all;cursor:grab;}
+      .ring.on:active{cursor:grabbing;}
+      .rm{width:240px;height:240px;box-shadow:9px 9px 22px var(--sh),-9px -9px 22px var(--light);transition-delay:0s;}
+      .rh{width:160px;height:160px;box-shadow:6px 6px 14px var(--sh),-6px -6px 14px var(--light),inset 2px 2px 5px var(--light),inset -2px -2px 5px var(--sh);z-index:2;transition-delay:.08s;}
+      /* cap: stacked layout when am_pm on, centred when off */
+      .cap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90px;height:90px;border-radius:50%;background:var(--bg);box-shadow:inset 5px 5px 12px var(--sh),inset -5px -5px 12px var(--light);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;user-select:none;transition:box-shadow .2s;}
+      .cap:active{box-shadow:inset 3px 3px 7px var(--sh),inset -3px -3px 7px var(--light);}
+      .val{pointer-events:none;line-height:1;color:var(--text);}
+      /* AM/PM badge — neumorphic pill, tappable */
+      .ampm-badge{
+        pointer-events:all;
+        line-height:1;color:var(--muted);
+        background:var(--bg);
+        border-radius:20px;
+        padding:2px 7px;
+        box-shadow:2px 2px 5px var(--sh),-2px -2px 5px var(--light);
+        cursor:pointer;
+        transition:box-shadow .15s,color .15s;
+        display:${is12?"flex":"none"};
+        align-items:center;
+      }
+      .ampm-badge.is-pm{color:var(--rh);}
+      .ampm-badge:active{box-shadow:inset 1px 1px 3px var(--sh),inset -1px -1px 3px var(--light);}
+      svg.ov{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:9;opacity:0;transition:opacity .4s ease .2s;}
+      svg.ov.on{opacity:1;}
+      .lh{stroke:var(--rh);stroke-width:2.5;stroke-linecap:round;opacity:.8;}
+      .lm{stroke:var(--rm);stroke-width:2.5;stroke-linecap:round;opacity:.8;}
+      .th{stroke:var(--rh);stroke-width:1;opacity:.3;}
+      .tm{stroke:var(--rm);stroke-width:1;opacity:.3;}
+    </style>
+    <div class="card">
+      <div class="s-top">${sh(slots.top)}</div>
+      <div class="mid">
+        <div class="s-left">${sh(slots.left)}</div>
+        <div class="stage" id="stage">
+          <div class="ring rm" id="RM"></div>
+          <div class="ring rh" id="RH"></div>
+          <svg class="ov" id="SV" viewBox="0 0 240 240">
+            <g id="TM"></g><g id="TH"></g>
+            <line class="lh" id="LH" x1="120" y1="74" x2="120" y2="46"/>
+            <line class="lm" id="LM" x1="120" y1="2"  x2="120" y2="22"/>
+          </svg>
+          <div class="cap" id="cap">
+            <span class="val"        id="TD"   style="${valSty}">00:00</span>
+            <span class="ampm-badge" id="AMPM" style="${ampmSty}">AM</span>
+          </div>
+        </div>
+        <div class="s-right">${sh(slots.right)}</div>
+      </div>
+      <div class="s-bot">${sh(slots.bottom)}</div>
+    </div>`;
+
+    this._drawTicks();
+    this._redraw();
+    this._bindEvents();
+  }
+
+  _drawTicks(){
+    const sh=this.shadowRoot,cx=120,cy=120;
+    const mk=(g,rad,r1,r2,sw,cls)=>{
+      const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+      l.setAttribute("x1",cx+r1*Math.cos(rad));l.setAttribute("y1",cy+r1*Math.sin(rad));
+      l.setAttribute("x2",cx+r2*Math.cos(rad));l.setAttribute("y2",cy+r2*Math.sin(rad));
+      l.setAttribute("stroke-width",sw);l.setAttribute("class",cls);g.appendChild(l);
+    };
+    const gm=sh.getElementById("TM");
+    for(let i=0;i<60;i++){const rad=(i/60*360-90)*Math.PI/180,maj=i%5===0;mk(gm,rad,maj?113:116,119,maj?2:1,"tm");}
+    const gh=sh.getElementById("TH");
+    // in 12h mode draw 12 ticks, in 24h mode draw 24
+    const hCount=this._is12h()?12:24;
+    for(let i=0;i<hCount;i++)mk(gh,(i/hCount*360-90)*Math.PI/180,73,79,i===0?3:2,"th");
+  }
+
+  _redraw(){
+    const sh=this.shadowRoot,cx=120,cy=120;
+    const is12=this._is12h();
+    const display12=is12?(this._h%12||12):this._h;
+    const hForDisplay=is12?display12:this._h;
+
+    // time text
+    const td=sh.getElementById("TD");
+    if(td) td.textContent=`${this._pad(hForDisplay)}:${this._pad(this._m)}`;
+
+    // AM/PM badge
+    const ap=sh.getElementById("AMPM");
+    if(ap){
+      ap.textContent=this._pm?"PM":"AM";
+      ap.classList.toggle("is-pm",this._pm);
+      ap.style.display=is12?"flex":"none";
+    }
+
+    // hour hand angle — always based on 12h cycle for visual
+    const hFrac=is12?(this._h%12)/12:this._h/24;
+    const hRad=(hFrac*360-90)*Math.PI/180;
+    const lh=sh.getElementById("LH");
+    if(lh){lh.setAttribute("x1",cx+46*Math.cos(hRad));lh.setAttribute("y1",cy+46*Math.sin(hRad));
+            lh.setAttribute("x2",cx+78*Math.cos(hRad));lh.setAttribute("y2",cy+78*Math.sin(hRad));}
+
+    // minute hand
+    const mRad=(this._m/60*360-90)*Math.PI/180;
+    const lm=sh.getElementById("LM");
+    if(lm){lm.setAttribute("x1",cx+82*Math.cos(mRad));lm.setAttribute("y1",cy+82*Math.sin(mRad));
+            lm.setAttribute("x2",cx+118*Math.cos(mRad));lm.setAttribute("y2",cy+118*Math.sin(mRad));}
+  }
+
+  _expand(){const sh=this.shadowRoot;this._expanded=true;sh.getElementById("RM")?.classList.add("on");sh.getElementById("RH")?.classList.add("on");sh.getElementById("SV")?.classList.add("on");}
+  _collapse(){const sh=this.shadowRoot;this._expanded=false;this._active=null;sh.getElementById("RM")?.classList.remove("on");sh.getElementById("RH")?.classList.remove("on");sh.getElementById("SV")?.classList.remove("on");this._saveEntity();}
+
+  _toggleAmPm(){
+    this._pm=!this._pm;
+    // shift hour by ±12
+    if(this._pm)  { if(this._h<12)  this._h+=12; }
+    else          { if(this._h>=12) this._h-=12; }
+    this._redraw();
+  }
+
+  _bindEvents(){
+    const sh=this.shadowRoot,stage=sh.getElementById("stage"),cap=sh.getElementById("cap");
+
+    // cap click: toggle expand, but if clicking badge toggle AM/PM instead
+    cap.addEventListener("click",e=>{
+      e.stopPropagation();
+      // check if badge was the target
+      const badge=sh.getElementById("AMPM");
+      if(badge&&badge.contains(e.composedPath?.()?.[0]||e.target)){
+        this._toggleAmPm(); return;
+      }
+      this._expanded?this._collapse():this._expand();
+    });
+
+    // separate direct listener on badge for safety
+    sh.getElementById("AMPM")?.addEventListener("click",e=>{
+      e.stopPropagation(); this._toggleAmPm();
+    });
+
+    const onStart=e=>{
+      if(!this._expanded)return;
+      const r=this._radiusRatio(e,stage);if(r<0.22)return;
+      this._active=r>0.5?"m":"h"; e.preventDefault();
+    };
+    this._mv=e=>{
+      if(!this._active)return; e.preventDefault();
+      const a=this._angleFrom(e,stage);
+      if(this._active==="m"){
+        this._m=Math.round(a/360*60)%60;
+      } else {
+        if(this._is12h()){
+          // map angle → 1–12 then apply PM offset
+          const raw=Math.round(a/360*12)%12||12; // 0→12
+          this._h=(raw%12)+(this._pm?12:0);      // 12AM→0, 12PM→12
+        } else {
+          const raw24=Math.round(a/360*24)%24;
+          this._h=raw24;
+          this._pm=this._h>=12;
+        }
+      }
+      this._redraw();
+    };
+    this._up=()=>{this._active=null;};
+    stage.addEventListener("mousedown",onStart);
+    stage.addEventListener("touchstart",onStart,{passive:false});
+    window.addEventListener("mousemove",this._mv);
+    window.addEventListener("touchmove",this._mv,{passive:false});
+    window.addEventListener("mouseup",this._up);
+    window.addEventListener("touchend",this._up);
+  }
+}
+
+customElements.define("timepicker-card",TimepickerCard);
+
+/* ─────────────────────────────────────────────────────
+   EDITOR
+───────────────────────────────────────────────────── */
+class TimepickerCardEditor extends NeuCardEditorBase {
+  _render(){
+    const amPmOn=this._get("am_pm","false");
+    const showAmPm=amPmOn===true||amPmOn==="true";
+    this.shadowRoot.innerHTML=`
+      ${this._editorCSS()}
+      <div class="editor">
+        ${this._section("Entity & Mode",
+          this._row("Entity",      this._inp("entity","input_datetime.my_time")),
+          this._row("12h Mode",    `<input type="checkbox" data-path="am_pm"${showAmPm?" checked":""}/>`),
+          this._row("Hide Border", `<input type="checkbox" data-path="hide_border"${this._get("hide_border")==="true"||this._get("hide_border")===true?" checked":""}/>`)
+        )}
+        ${this._labelSection("label_major","Major Label","e.g. Alarm")}
+        ${this._labelSection("label_minor","Minor Label","e.g. Morning routine")}
+        ${this._valueSection("value","Value Display")}
+        ${showAmPm?this._valueSection("ampm","AM / PM Badge"):""}
+        ${this._iconSection("mdi:alarm · mdi:clock-outline · mdi:bell · mdi:coffee")}
+      </div>`;
+    this._bindInputs();
+  }
+}
+
+customElements.define("timepicker-card-editor",TimepickerCardEditor);
+
+window.customCards=window.customCards||[];
+window.customCards.push({type:"timepicker-card",name:"Neumorphic Time Picker",description:"Expanding-ring neumorphic time picker with AM/PM.",preview:true});
+
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+ * neumorphic-button-card.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+/**
+ * Neumorphic Button Card for Home Assistant  — v15
+ * Matches the hacs-neumorphic-template theme aesthetic
+ *
+ * ── Core options ─────────────────────────────────────────────────────────────
+ * type:            custom:neumorphic-button-card
+ * entity:          light.my_light
+ * icon:            mdi:lightbulb
+ * card_mode:       default          # default | flat | none
+ *   default  → full neumorphic card with raised shadow and background
+ *   flat     → shadow removed, background transparent, padding reduced (8px)
+ *              Knob is still contained - labels/dot stay spaced. Use inside grid cards.
+ *   none     → zero padding, zero radius, no background, no shadow - card is invisible.
+ *              Only the knob + labels render. Flat vs none: flat keeps 8px padding and
+ *              border-radius; none strips everything to zero.
+ *
+ * icon_on_color:   '#e8824a'        # icon + glow color when entity is ON
+ *
+ * label_major / label_minor font options include:
+ *   font_family: 'Roboto'            # any CSS font name or Google Font; blank = theme default
+ *   font_size, font_weight, font_style, letter_spacing, text_transform — see label docs
+ * icon_off_color:  ''               # icon color when OFF (default: grey #a0a0a8)
+ * show_dot:        true             # false to hide the state indicator dot
+ *
+ * display_only:    false            # true = read-only display card
+ *   When true: the knob and icon remain as a visual state indicator (on/off glow,
+ *   animations etc.) but ALL pointer events, tap/hold actions and ripple are
+ *   disabled. The card cannot change the entity value. Use to observe state
+ *   without accidental interaction — e.g. a sensor or a status indicator.
+ * icon_animation:  pulse            # pulse|spin|bounce|swing|flash|none
+ * size:            68               # knob diameter px
+ * icon_size:       28               # icon px (auto if omitted)
+ * shape:           round            # round|squircle|square
+ * glow_intensity:  1                # 0–2
+ * depth:           1                # 0–2
+ *
+ * tap_action:      toggle           # toggle|more-info|call-service
+ * hold_action:     more-info        # toggle|more-info|call-service|none (fires after hold_timeout ms)
+ * hold_timeout:    500              # ms before hold fires (default 500)
+ * service:         light.turn_on    # service for tap_action: call-service
+ * service_data:    {}
+ * hold_service:    scene.turn_on    # service for hold_action: call-service
+ * hold_service_data: {}
+ *
+ * ── Label system ─────────────────────────────────────────────────────────────
+ * label_major / label_minor — see inline docs below
+ */
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CARD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const DEFAULT_ON_COLOR = '#e8824a';
+
+const POWER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/>
+  <line x1="12" y1="2" x2="12" y2="12"/>
+</svg>`;
+
+const MDI_PATHS = {
+  'mdi:lightbulb':     'M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7m0 18a1 1 0 0 1 1 1H11a1 1 0 0 1 1-1m3-3H9v1h6v-1z',
+  'mdi:power':         'M16.56 5.44l-1.45 1.45A5.969 5.969 0 0 1 18 12a6 6 0 0 1-6 6 6 6 0 0 1-6-6c0-2.17 1.16-4.06 2.89-5.11L7.44 5.44A7.961 7.961 0 0 0 4 12a8 8 0 0 0 8 8 8 8 0 0 0 8-8c0-2.72-1.36-5.12-3.44-6.56M13 3h-2v10h2V3z',
+  'mdi:toggle-switch': 'M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zm0-7a3 3 0 1 0 .001 6.001A3 3 0 0 0 17 9z',
+  'mdi:fan':           'M12 11A1 1 0 0 0 11 12 1 1 0 0 0 12 13 1 1 0 0 0 13 12 1 1 0 0 0 12 11M12.5 2C17 2 17.11 5.57 14.75 6.75 13.28 7.5 13 8.31 13 9H11C11 7.56 11.44 6.25 12.5 5.25 13.5 4.25 14 3.13 13.13 2.25 12.38 1.5 10.59 1.47 10.13 3.13L8.17 2.61C8.68 .5 10.43 2 12.5 2M2 12.5C2 8 5.57 7.89 6.75 10.25 7.5 11.72 8.31 12 9 12V14C7.56 14 6.25 13.56 5.25 12.5 4.25 11.5 3.13 11 2.25 11.88 1.5 12.63 1.47 14.41 3.13 14.87L2.61 16.83C.5 16.32 2 14.57 2 12.5M12 21.5C7.5 21.5 7.5 17.93 9.25 16.75 10.72 15.5 11 15.69 11 15H13C13 16.44 12.56 17.75 11.5 18.75 10.5 19.75 10 20.88 10.88 21.75 11.63 22.5 13.41 22.53 13.87 20.88L15.83 21.4C15.32 23.5 13.57 21.5 12 21.5M21.5 11.5C22 16 18.43 16.11 17.25 13.75 16.5 12.28 15.69 12 15 12V10C16.44 10 17.75 10.44 18.75 11.5 19.75 12.5 20.88 13 21.75 12.13 22.5 11.38 22.53 9.59 20.88 9.13L21.4 7.17C23.5 7.68 21.5 9.43 21.5 11.5Z',
+  'mdi:thermometer':   'M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z',
+  'mdi:microphone':    'M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V5a3 3 0 0 1 3-3m7 9c0 3.53-2.61 6.44-6 6.93V21h-2v-3.07c-3.39-.49-6-3.4-6-6.93h2a5 5 0 0 0 5 5 5 5 0 0 0 5-5h2z',
+  'mdi:television':    'M21 17H3V5h18m0-2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z',
+  'mdi:speaker':       'M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.84-5 6.7v2.07C18.01 19.86 21 16.28 21 12c0-4.27-2.99-7.85-7-8.77M16.5 12c0-1.77-1-3.29-2.5-4.03V16c1.5-.71 2.5-2.24 2.5-4M3 9v6h4l5 5V4L7 9H3z',
+  'mdi:lock':          'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',
+};
+
+function getMdiPath(icon) { return MDI_PATHS[icon] ?? null; }
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+function resolveShape(shape, knobSize) {
+  const p = (pct) => `${Math.round(knobSize * pct)}px`;
+  switch ((shape ?? 'round').toLowerCase()) {
+    case 'squircle': return { knob: p(0.28), card: p(0.22) };
+    case 'square':   return { knob: p(0.14), card: p(0.11) };
+    default:         return { knob: '50%',   card: null };
+  }
+}
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${clamp(alpha,0,1).toFixed(3)})`;
+}
+
+function buildKnobShadow({ r, di, gi, onColor, isOn, sd, sl }) {
+  const layers = [];
+  if (di > 0) {
+    const od = r(Math.round(5+7*di)), ob = r(Math.round(12+16*di)), oa = clamp(0.25+0.35*di,0,1);
+    layers.push(`${od}px ${od}px ${ob}px rgba(160,162,170,${oa.toFixed(3)})`);
+    layers.push(`-${od}px -${od}px ${ob}px rgba(255,255,255,${clamp(0.55+0.35*di,0,1).toFixed(3)})`);
+    const er = r(Math.round(1+1*di)), eb = r(Math.round(3+3*di)), ea = clamp(0.12+0.12*di,0,1);
+    layers.push(`0px 0px ${eb}px ${er}px rgba(140,142,150,${ea.toFixed(3)})`);
+  } else {
+    layers.push(`${r(5)}px ${r(5)}px ${r(12)}px ${sd}`);
+    layers.push(`-${r(5)}px -${r(5)}px ${r(12)}px ${sl}`);
+  }
+  if (isOn && di > 0) {
+    const id = r(Math.round(2+3*di)), ib = r(Math.round(4+6*di));
+    layers.push(`inset ${id}px ${id}px ${ib}px rgba(140,142,150,${clamp(0.18+0.22*di,0,0.6).toFixed(3)})`);
+    layers.push(`inset -${id}px -${id}px ${ib}px rgba(255,255,255,${clamp(0.50+0.30*di,0,1).toFixed(3)})`);
+  } else if (isOn && di === 0) {
+    layers.push(`inset ${r(2)}px ${r(2)}px ${r(5)}px ${sd}`);
+    layers.push(`inset -${r(2)}px -${r(2)}px ${r(5)}px ${sl}`);
+  }
+  if (isOn && gi > 0) {
+    layers.push(`0 0 ${r(10)}px ${r(-2)}px ${hexToRgba(onColor,gi*0.85)}`);
+    layers.push(`0 0 ${r(26)}px ${r(-4)}px ${hexToRgba(onColor,gi*0.45)}`);
+  }
+  return layers.join(',\n      ');
+}
+
+const MAJOR_DEFAULTS = {
+  visible: true, position: 'bottom', font_size: 13, font_weight: 600,
+  font_family: '', font_style: 'normal', letter_spacing: 0.04, text_transform: 'none',
+  color: '', opacity: 0.85, align: 'center', max_width: 0, truncate: true,
+};
+const MINOR_DEFAULTS = {
+  visible: true, font_size: 10, font_weight: 400, font_family: '',
+  font_style: 'normal', letter_spacing: 0.07, text_transform: 'uppercase', color: '', opacity: 0.50,
+  align: 'center', max_width: 0, truncate: true,
+};
+
+function resolveLabel(userCfg, defaults) {
+  if (!userCfg && userCfg !== false) return { ...defaults };
+  if (userCfg === false) return { ...defaults, visible: false };
+  return { ...defaults, ...userCfg };
+}
+
+function positionLayout(pos) {
+  switch ((pos ?? 'bottom').toLowerCase()) {
+    case 'top':   return { flex: 'column-reverse', labelAlign: 'center',      side: 'top' };
+    case 'left':  return { flex: 'row-reverse',    labelAlign: 'flex-end',    side: 'left' };
+    case 'right': return { flex: 'row',            labelAlign: 'flex-start',  side: 'right' };
+    default:      return { flex: 'column',         labelAlign: 'center',      side: 'bottom' };
+  }
+}
+
+function labelCSS(cls, cfg, isHorizontal) {
+  const mw  = cfg.max_width > 0 ? `${cfg.max_width}px` : (isHorizontal ? '160px' : '100%');
+  const col = cfg.color ? cfg.color : 'var(--primary-text-color, #4a4f5a)';
+  return `
+  .${cls} {
+    font-family:    ${cfg.font_family ? '"' + cfg.font_family + '"' : 'var(--primary-font-family, var(--paper-font-body1_-_font-family, inherit))'};
+    font-size:      ${cfg.font_size}px;
+    font-weight:    ${cfg.font_weight};
+    font-style:     ${cfg.font_style};
+    letter-spacing: ${cfg.letter_spacing}em;
+    text-transform: ${cfg.text_transform};
+    color:          ${col};
+    opacity:        ${cfg.opacity};
+    text-align:     ${cfg.align};
+    max-width:      ${mw};
+    overflow:       ${cfg.truncate ? 'hidden' : 'visible'};
+    white-space:    ${cfg.truncate ? 'nowrap' : 'normal'};
+    text-overflow:  ${cfg.truncate ? 'ellipsis' : 'clip'};
+    line-height:    1.3;
+    transition:     opacity 0.2s ease, color 0.2s ease;
+    flex-shrink:    0;
+  }`;
+}
+
+// Build @import rules for any Google Fonts needed — injected into shadow root style
+function buildFontImports(majorCfg, minorCfg) {
+  const WEB_SAFE = new Set([
+    '', 'system-ui', 'Arial', 'Helvetica Neue', 'Georgia',
+    'Times New Roman', 'Courier New', 'monospace', 'serif', 'sans-serif'
+  ]);
+  const families = [majorCfg.font_family, minorCfg.font_family]
+    .filter(f => f && !WEB_SAFE.has(f));
+  const unique = [...new Set(families)];
+  if (!unique.length) return '';
+  return unique.map(f =>
+    `@import url('https://fonts.googleapis.com/css2?family=${
+      encodeURIComponent(f).replace(/%20/g,'+')
+    }:wght@300;400;500;600;700;800&display=swap');`
+  ).join('\n');
+}
+
+function buildStyles(knobSize, iconSize, shape, glowIntensity, depth, onColor, offColor, majorCfg, minorCfg) {
+  const k  = knobSize / 68;
+  const r  = (v) => Math.round(v * k);
+  const f  = (v) => +(v * k).toFixed(2);
+  const gi = clamp(glowIntensity, 0, 3);
+  const di = clamp(depth, 0, 2);
+  const sd = 'var(--nm-shadow-dark)', sl = 'var(--nm-shadow-lite)';
+
+  const sh2d = r(Math.round(5+4*di)), sh2b = r(Math.round(12+8*di));
+  const shPd = r(2), shPb = r(6);
+
+  const { knob: knobRadius, card: cardRadius } = resolveShape(shape, knobSize);
+  const cardRadiusRule = cardRadius ?? `var(--ha-card-border-radius, ${r(18)}px)`;
+
+  const iconDropBlur  = gi > 0 ? `${+(r(4)*gi).toFixed(1)}px` : '0px';
+  const iconDropColor = gi > 0 ? hexToRgba(onColor, gi*0.9) : 'transparent';
+  const dotGlowColor  = gi > 0 ? hexToRgba(onColor, gi*0.9) : 'transparent';
+
+  const shadowOff     = buildKnobShadow({ r, di, gi:0, onColor, isOn:false, sd, sl });
+  const shadowOn      = buildKnobShadow({ r, di, gi,   onColor, isOn:true,  sd, sl });
+  const shadowPressed = `inset ${r(2)}px ${r(2)}px ${r(6)}px ${sd}, inset -${r(2)}px -${r(2)}px ${r(6)}px ${sl}`;
+
+  const dotSz = Math.max(4, r(6)), dotMT = -Math.max(3, r(6)), bY = r(6);
+  const shineOpacity = clamp(di*0.18, 0, 0.35).toFixed(3);
+  const knobBg = di > 0
+    ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,${shineOpacity}) 0%, transparent 68%), var(--nm-bg)`
+    : 'var(--nm-bg)';
+
+  const pos      = majorCfg.position ?? 'bottom';
+  const { flex: cardFlex, labelAlign, side } = positionLayout(pos);
+  const isHoriz  = side === 'left' || side === 'right';
+  const padV = r(isHoriz ? 14 : 20), padH = r(14), padB = r(isHoriz ? 14 : 16);
+  const gap  = r(isHoriz ? 14 : 10);
+  const fpV  = r(8), fpH = r(10), fpB = r(6);
+
+  const lblTextAlign = isHoriz ? (side === 'left' ? 'right' : 'left') : 'center';
+  const majorAlign = majorCfg.align !== 'center' ? majorCfg.align : (isHoriz ? lblTextAlign : 'center');
+  const minorAlign = minorCfg.align !== 'center' ? minorCfg.align : (isHoriz ? lblTextAlign : 'center');
+  const majorCSS_ = labelCSS('lbl-major', { ...majorCfg, align: majorAlign }, isHoriz);
+  const minorCSS_ = labelCSS('lbl-minor', { ...minorCfg, align: minorAlign }, isHoriz);
+
+  const fontImports = buildFontImports(majorCfg, minorCfg);
+  return `${fontImports ? fontImports + '\n' : ''}
+  :host { display: block; }
+  .card-wrapper {
+    --nm-bg:          var(--ha-card-background, #e0e5ec);
+    --nm-shadow-dark: var(--neumorphic-shadow-dark,  #b8bec7);
+    --nm-shadow-lite: var(--neumorphic-shadow-light, #ffffff);
+    --nm-on-color:    ${onColor};
+    --nm-off-color:   var(--nm-icon-off, #a0a0a8);
+    --nm-icon-off:    ${offColor || '#a0a0a8'};
+    --nm-text:        var(--primary-text-color, #4a4f5a);
+    display: flex; flex-direction: ${cardFlex}; align-items: center; justify-content: center;
+    padding: ${padV}px ${padH}px ${padB}px; gap: ${gap}px;
+    background: var(--nm-bg); border-radius: ${cardRadiusRule};
+    box-shadow: ${sh2d}px ${sh2d}px ${sh2b}px var(--nm-shadow-dark), -${sh2d}px -${sh2d}px ${sh2b}px var(--nm-shadow-lite);
+    cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 0.18s ease; position: relative; overflow: hidden;
+  }
+  .card-wrapper.mode-flat { box-shadow: none; background: transparent; padding: var(--nm-flat-pad, 8px) var(--nm-flat-padh, 10px) var(--nm-flat-padb, 6px); }px ${fpH}px ${fpB}px; }
+  .card-wrapper.mode-none { box-shadow: none !important; background: transparent !important; border-radius: 0 !important; padding: 0 !important; }
+  .card-wrapper.pressed:not(.mode-flat):not(.mode-none) {
+    box-shadow: ${shPd}px ${shPd}px ${shPb}px var(--nm-shadow-dark), -${shPd}px -${shPd}px ${shPb}px var(--nm-shadow-lite),
+      inset ${shPd}px ${shPd}px ${r(8)}px var(--nm-shadow-dark), inset -${shPd}px -${shPd}px ${r(8)}px var(--nm-shadow-lite);
+  }
+  .knob {
+    width: ${knobSize}px; height: ${knobSize}px; border-radius: ${knobRadius};
+    background: ${knobBg}; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: box-shadow 0.22s ease, transform 0.14s ease;
+    box-shadow: ${shadowOff};
+  }
+  .knob.on  { box-shadow: ${shadowOn}; }
+  .card-wrapper.pressed .knob { transform: scale(0.95); box-shadow: ${shadowPressed}; }
+  .icon-wrap { width: ${iconSize}px; height: ${iconSize}px; display: flex; align-items: center; justify-content: center; }
+  .icon-wrap svg, .icon-wrap ha-icon { width: ${iconSize}px; height: ${iconSize}px; display: block; transition: color 0.25s ease, filter 0.25s ease; }
+  .knob.off .icon-wrap { color: var(--nm-off-color); filter: none; }
+  .knob.on  .icon-wrap { color: var(--nm-on-color); filter: ${gi > 0 ? `drop-shadow(0 0 ${iconDropBlur} ${iconDropColor})` : 'none'}; }
+  .knob.on[data-anim="pulse"] .icon-wrap  { animation: nm-pulse  1.8s ease-in-out infinite; }
+  @keyframes nm-pulse  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+  .knob.on[data-anim="spin"] .icon-wrap   { animation: nm-spin   1.4s linear infinite; }
+  @keyframes nm-spin   { to{transform:rotate(360deg)} }
+  .knob.on[data-anim="bounce"] .icon-wrap { animation: nm-bounce 1s cubic-bezier(.36,.07,.19,.97) infinite; }
+  @keyframes nm-bounce { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-${bY}px)} 60%{transform:translateY(-${Math.round(bY*0.33)}px)} }
+  .knob.on[data-anim="swing"] .icon-wrap  { transform-origin:top center; animation: nm-swing 1.3s ease-in-out infinite; }
+  @keyframes nm-swing { 0%,100%{transform:rotate(0)} 20%{transform:rotate(18deg)} 50%{transform:rotate(-14deg)} 75%{transform:rotate(8deg)} 90%{transform:rotate(-4deg)} }
+  .knob.on[data-anim="flash"] .icon-wrap  { animation: nm-flash  1.2s ease-in-out infinite; }
+  @keyframes nm-flash { 0%,100%{opacity:1} 50%{opacity:.15} }
+  .label-block { display: flex; flex-direction: column; align-items: ${labelAlign}; justify-content: ${isHoriz ? 'center' : 'flex-start'}; gap: ${r(3)}px; flex-shrink: 1; min-width: 0; }
+  ${majorCSS_}
+  ${minorCSS_}
+  .card-wrapper:not(.pressed):hover .lbl-major,
+  .card-wrapper:not(.pressed):hover .lbl-minor { opacity: 1; }
+  .state-dot {
+    width: ${dotSz}px; height: ${dotSz}px; border-radius: 50%;
+    background: var(--nm-off-color); transition: background 0.25s ease, box-shadow 0.25s ease;
+    flex-shrink: 0; ${isHoriz ? '' : `margin-top: ${dotMT}px;`}
+  }
+  .state-dot.on { background: var(--nm-on-color); box-shadow: ${gi > 0 ? `0 0 ${r(6)}px 1px ${dotGlowColor}` : 'none'}; }
+  .state-dot.hidden { display: none !important; }
+  .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: nm-ripple 0.5s linear; background: rgba(255,255,255,0.25); pointer-events: none; }
+  @keyframes nm-ripple { to { transform: scale(4); opacity: 0; } }
+  .hold-ring { position: absolute; border-radius: inherit; inset: 0; border: 3px solid var(--nm-on-color); opacity: 0; pointer-events: none; transform: scale(0.75); }
+  .hold-ring.charging { animation: nm-hold-ring var(--nm-hold-timeout, 500ms) linear forwards; }
+  @keyframes nm-hold-ring { 0%{transform:scale(0.75);opacity:0.15} 80%{transform:scale(1.05);opacity:0.7} 100%{transform:scale(1.12);opacity:0} }
+  /* ── display-only mode: visual only, no interaction ── */
+  .card-wrapper.mode-display {
+    cursor: default !important;
+    pointer-events: none !important;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+`;
+}
+
+class NeumorphicButtonCard extends HTMLElement {
+  constructor() {
+    super();
+    this._hass = null; this._config = null;
+    this._shadow = this.attachShadow({ mode: 'open' });
+    this._wrapper = null; this._knob = null;
+    this._lblMajor = null; this._lblMinor = null; this._dot = null;
+  }
+
+  setConfig(config) {
+    if (!config.entity) throw new Error('Please define an entity.');
+    const knobSize      = Number(config.size ?? 68);
+    const iconSize      = Number(config.icon_size ?? Math.round(knobSize * 0.412));
+    const glowIntensity = Number(config.glow_intensity ?? 1);
+    const depth         = Number(config.depth ?? 1);
+    const onColor       = config.icon_on_color ?? DEFAULT_ON_COLOR;
+    const offColor      = config.icon_off_color  || '';
+    const majorCfg      = resolveLabel(config.label_major, MAJOR_DEFAULTS);
+    const minorCfg      = resolveLabel(config.label_minor, MINOR_DEFAULTS);
+    minorCfg.position   = majorCfg.position;
+    this._config = {
+      tap_action: 'toggle', hold_action: 'none', hold_timeout: 500, hold_service: '', hold_service_data: {},
+      card_mode: 'default', icon_animation: 'none', shape: 'round', display_only: false,
+      ...config, _knobSize: knobSize, _iconSize: iconSize,
+      _glowIntensity: glowIntensity, _depth: depth, _onColor: onColor, _offColor: offColor,
+      _majorCfg: majorCfg, _minorCfg: minorCfg,
+    };
+    this._render();
+  }
+
+  set hass(hass) { this._hass = hass; this._updateState(); }
+
+  _render() {
+    const cfg = this._config, major = cfg._majorCfg, minor = cfg._minorCfg;
+    const style = document.createElement('style');
+    style.textContent = buildStyles(cfg._knobSize, cfg._iconSize, cfg.shape, cfg._glowIntensity, cfg._depth, cfg._onColor, cfg._offColor, major, minor);
+
+    const cardMode = (cfg.card_mode || 'default').toLowerCase();
+    const displayOnly = cfg.display_only === true;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card-wrapper' +
+      (displayOnly ? ' mode-display' : (cardMode !== 'default' ? ` mode-${cardMode}` : ''));
+
+    // display_only shares the same DOM as normal mode — pointer-events: none
+    // is applied via .mode-display CSS; no separate branch needed.
+    this._displayValueEl = null;
+
+    const knob = document.createElement('div');
+    knob.className = 'knob off';
+    if (cfg.icon_animation && cfg.icon_animation !== 'none') knob.dataset.anim = cfg.icon_animation;
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'icon-wrap';
+    iconWrap.innerHTML = this._buildIconSVG(cfg.icon, cfg._iconSize);
+    knob.appendChild(iconWrap);
+    // hold ring overlay
+    const holdRing = document.createElement('div');
+    holdRing.className = 'hold-ring';
+    wrapper.style.setProperty('--nm-hold-timeout', (cfg.hold_timeout || 500) + 'ms');
+    wrapper.appendChild(holdRing);
+
+    const hasAnyLabel = major.visible || minor.visible;
+    let lblBlock = null, lblMajorEl = null, lblMinorEl = null;
+    if (hasAnyLabel) {
+      lblBlock = document.createElement('div');
+      lblBlock.className = 'label-block';
+      if (major.visible) {
+        lblMajorEl = document.createElement('div');
+        lblMajorEl.className = 'lbl-major';
+        lblMajorEl.textContent = major.text ?? cfg.name ?? cfg.entity.split('.').pop()?.replace(/_/g,' ') ?? '';
+        lblBlock.appendChild(lblMajorEl);
+      }
+      if (minor.visible) {
+        lblMinorEl = document.createElement('div');
+        lblMinorEl.className = 'lbl-minor';
+        lblMinorEl.textContent = minor.text ?? '';
+        lblBlock.appendChild(lblMinorEl);
+      }
+    }
+
+    const dot = document.createElement('div');
+    const showDot = cfg.show_dot !== false;
+    dot.className = 'state-dot' + (showDot ? '' : ' hidden');
+    const pos = major.position ?? 'bottom';
+    const isHoriz = pos === 'left' || pos === 'right';
+
+    if (isHoriz) {
+      const dotWrap = document.createElement('div');
+      dotWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;';
+      dotWrap.appendChild(knob); dotWrap.appendChild(dot);
+      wrapper.appendChild(dotWrap);
+      if (lblBlock) wrapper.appendChild(lblBlock);
+    } else {
+      wrapper.appendChild(knob);
+      if (lblBlock) wrapper.appendChild(lblBlock);
+      wrapper.appendChild(dot);
+    }
+
+    // ── Tap + Hold event handling ─────────────────────────────────────────
+    let _holdTimer = null;
+    let _didHold   = false;
+
+    wrapper.addEventListener('pointerdown', (e) => {
+      wrapper.classList.add('pressed');
+      this._spawnRipple(e, wrapper);
+      _didHold = false;
+      if (this._config.hold_action && this._config.hold_action !== 'none') {
+        holdRing.classList.remove('charging');
+        void holdRing.offsetWidth;
+        holdRing.classList.add('charging');
+        _holdTimer = setTimeout(() => {
+          _didHold = true;
+          holdRing.classList.remove('charging');
+          this._handleHoldAction();
+        }, this._config.hold_timeout || 500);
+      }
+    });
+    const _cancelHold = () => {
+      if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
+      holdRing.classList.remove('charging');
+      wrapper.classList.remove('pressed');
+    };
+    wrapper.addEventListener('pointerup',    _cancelHold);
+    wrapper.addEventListener('pointerleave', _cancelHold);
+    wrapper.addEventListener('click', () => { if (!_didHold) this._handleAction(); _didHold = false; });
+
+    this._shadow.innerHTML = '';
+    this._shadow.appendChild(style);
+    this._shadow.appendChild(wrapper);
+    this._wrapper = wrapper; this._knob = knob;
+    this._lblMajor = lblMajorEl; this._lblMinor = lblMinorEl; this._dot = dot;
+  }
+
+  _buildIconSVG(icon, iconSize) {
+    if (!icon) return POWER_SVG;
+    const path = getMdiPath(icon);
+    if (path) return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${path}"/></svg>`;
+    return `<ha-icon icon="${icon}" style="--mdc-icon-size:${iconSize}px;color:currentColor;"></ha-icon>`;
+  }
+
+  _updateState() {
+    if (!this._hass || !this._config) return;
+    const entity = this._hass.states[this._config.entity];
+    if (!entity) return;
+
+    // display_only: state still updates knob on/off visually; no special branch needed
+    if (!this._knob || !this._dot) return;
+    const OFF = new Set(['off','unavailable','unknown','idle','paused','away','closed','locked','standby']);
+    const ON  = new Set(['on','playing','home','open','unlocked']);
+    const isOn = ON.has(entity.state) || !OFF.has(entity.state);
+    this._knob.className = `knob ${isOn ? 'on' : 'off'}`;
+    if (this._config.icon_animation && this._config.icon_animation !== 'none') this._knob.dataset.anim = this._config.icon_animation;
+    const _showDot = this._config.show_dot !== false;
+    this._dot.className = `state-dot${isOn ? ' on' : ''}${_showDot ? '' : ' hidden'}`;
+    const major = this._config._majorCfg;
+    if (this._lblMajor && !major.text && !this._config.name) {
+      this._lblMajor.textContent = entity.attributes.friendly_name ?? this._config.entity.split('.').pop()?.replace(/_/g,' ') ?? '';
+    }
+  }
+
+  _spawnRipple(e, wrapper) {
+    const rect = wrapper.getBoundingClientRect(), size = Math.max(rect.width, rect.height);
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    Object.assign(ripple.style, { width:`${size}px`, height:`${size}px`, left:`${e.clientX-rect.left-size/2}px`, top:`${e.clientY-rect.top-size/2}px` });
+    wrapper.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+  }
+
+  _handleAction() {
+    if (!this._hass || !this._config) return;
+    const cfg = this._config;
+    switch (cfg.tap_action) {
+      case 'toggle': this._hass.callService('homeassistant','toggle',{entity_id:cfg.entity}); break;
+      case 'more-info': this.dispatchEvent(new CustomEvent('hass-more-info',{bubbles:true,composed:true,detail:{entityId:cfg.entity}})); break;
+      case 'call-service': { const [d,s]=(cfg.service??'').split('.'); if(d&&s) this._hass.callService(d,s,{entity_id:cfg.entity,...(cfg.service_data??{})}); break; }
+    }
+  }
+
+  _handleHoldAction() {
+    if (!this._hass || !this._config) return;
+    const cfg = this._config;
+    switch (cfg.hold_action) {
+      case 'toggle': this._hass.callService('homeassistant','toggle',{entity_id:cfg.entity}); break;
+      case 'more-info': this.dispatchEvent(new CustomEvent('hass-more-info',{bubbles:true,composed:true,detail:{entityId:cfg.entity}})); break;
+      case 'call-service': {
+        const [d,s]=(cfg.hold_service??'').split('.');
+        if(d&&s) this._hass.callService(d,s,{entity_id:cfg.entity,...(cfg.hold_service_data??{})});
+        break;
+      }
+    }
+  }
+
+  getCardSize() { const s = this._config?._knobSize ?? 68; return s >= 100 ? 3 : s <= 48 ? 1 : 2; }
+
+  static getStubConfig() {
+    return {
+      entity:'light.example', icon:'mdi:lightbulb', icon_on_color:DEFAULT_ON_COLOR,
+      shape:'round', depth:1, glow_intensity:1, tap_action:'toggle',
+      label_major:{ text:'Living Room', visible:true, position:'bottom', font_size:13, font_weight:600, text_transform:'none', opacity:0.85 },
+      label_minor:{ text:'Ceiling light', visible:true, font_size:10, text_transform:'uppercase', letter_spacing:0.08, opacity:0.50 },
+    };
+  }
+}
+
+customElements.define('neumorphic-button-card', NeumorphicButtonCard);
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  VISUAL EDITOR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const EDITOR_STYLES = `
+  :host { display: block; font-family: var(--paper-font-body1_-_font-family, sans-serif); }
+
+  /* ── section headers ── */
+  .section-header {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--secondary-text-color, #8891a0);
+    padding: 16px 0 6px; border-bottom: 1px solid var(--divider-color, rgba(0,0,0,.08));
+    margin-bottom: 10px; cursor: pointer; user-select: none;
+  }
+  .section-header svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s ease; }
+  .section-header.collapsed svg { transform: rotate(-90deg); }
+  .section-body { margin-bottom: 4px; }
+  .section-body.hidden { display: none; }
+
+  /* ── rows and fields ── */
+  .row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; }
+  .row.col { flex-direction: column; gap: 4px; }
+  .row.full { flex-direction: column; }
+  .half { flex: 1 1 calc(50% - 4px); min-width: 100px; }
+  .third { flex: 1 1 calc(33% - 6px); min-width: 80px; }
+
+  /* ── reuse HA paper elements or fallback to plain inputs ── */
+  label {
+    display: block; font-size: 12px; color: var(--secondary-text-color, #6b7280);
+    margin-bottom: 3px; font-weight: 500;
+  }
+
+  input[type=text], input[type=number], input[type=color], select {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    border: 1px solid var(--divider-color, #d1d5db);
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color, #111);
+    font-size: 13px; box-sizing: border-box;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus {
+    outline: none; border-color: var(--primary-color, #e8824a);
+  }
+  input[type=color] { height: 36px; padding: 2px 4px; cursor: pointer; }
+
+  input[type=range] {
+    width: 100%; accent-color: var(--primary-color, #e8824a);
+    margin-top: 2px;
+  }
+  .range-row { display: flex; align-items: center; gap: 8px; }
+  .range-row input[type=range] { flex: 1; }
+  .range-val { font-size: 12px; font-weight: 700; color: var(--primary-color, #e8824a); min-width: 32px; text-align: right; }
+
+  /* toggle switch */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .toggle-row label { margin: 0; }
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider-sw {
+    position: absolute; cursor: pointer; inset: 0; border-radius: 20px;
+    background: var(--divider-color, #ccc); transition: .2s;
+  }
+  .slider-sw::before {
+    content: ''; position: absolute; height: 14px; width: 14px;
+    left: 3px; bottom: 3px; border-radius: 50%;
+    background: white; transition: .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  input:checked + .slider-sw { background: var(--primary-color, #e8824a); }
+  input:checked + .slider-sw::before { transform: translateX(16px); }
+
+  /* color field: swatch preview + hex text input */
+  .color-field { display: flex; align-items: center; gap: 6px; }
+  .color-swatch {
+    width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
+    border: 1px solid var(--divider-color, #d1d5db);
+    cursor: pointer; position: relative; overflow: hidden;
+  }
+  .color-swatch input[type=color] {
+    position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px);
+    opacity: 0; cursor: pointer; padding: 0; border: none;
+  }
+  .color-text { flex: 1; min-width: 0; }
+  .color-text input[type=text] { font-family: monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ha-entity-picker shim — uses ha element if available */
+  ha-entity-picker, ha-icon-picker { display: block; width: 100%; margin-bottom: 8px; }
+`;
+
+class NeumorphicButtonCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this._shadow = this.attachShadow({ mode: 'open' });
+    this._config = {};
+    this._hass   = null;
+    this._sections = {};
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  setConfig(config) {
+    this._config = JSON.parse(JSON.stringify(config)); // deep clone
+    this._render();
+  }
+
+  // ── helpers ──────────────────────────────────────────────────────────────────
+  _val(path, fallback) {
+    const parts = path.split('.');
+    let obj = this._config;
+    for (const p of parts) {
+      if (obj == null || typeof obj !== 'object') return fallback;
+      obj = obj[p];
+    }
+    return obj ?? fallback;
+  }
+
+  _set(path, value) {
+    const parts = path.split('.');
+    let obj = this._config;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (obj[parts[i]] == null || typeof obj[parts[i]] !== 'object') obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = value;
+    this._fire();
+  }
+
+  _fire() {
+    // strip internal _ keys before firing
+    const clean = Object.fromEntries(Object.entries(this._config).filter(([k]) => !k.startsWith('_')));
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: clean }, bubbles: true, composed: true }));
+  }
+
+  // ── section collapse toggle ────────────────────────────────────────────────
+  _toggleSection(id) {
+    this._sections[id] = !this._sections[id]; // true = collapsed
+    const header = this._shadow.querySelector(`[data-sec="${id}"]`);
+    const body   = this._shadow.querySelector(`[data-secbody="${id}"]`);
+    if (header && body) {
+      header.classList.toggle('collapsed', !!this._sections[id]);
+      body.classList.toggle('hidden', !!this._sections[id]);
+    }
+  }
+
+  // ── building blocks ────────────────────────────────────────────────────────
+  _section(id, title, icon, content) {
+    const collapsed = !!this._sections[id];
+    return `
+    <div class="section-header ${collapsed ? 'collapsed' : ''}" data-sec="${id}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+      ${icon} &nbsp;${title}
+    </div>
+    <div class="section-body ${collapsed ? 'hidden' : ''}" data-secbody="${id}">
+      ${content}
+    </div>`;
+  }
+
+  _text(path, label, placeholder = '') {
+    return `<div class="row col"><label>${label}</label><input type="text" data-path="${path}" value="${this._val(path,'')}" placeholder="${placeholder}"></div>`;
+  }
+
+  _number(path, label, min, max, step = 1) {
+    return `<div class="row col"><label>${label}</label><input type="number" data-path="${path}" value="${this._val(path,0)}" min="${min}" max="${max}" step="${step}"></div>`;
+  }
+
+  _range(path, label, min, max, step, suffix = '') {
+    const v = this._val(path, min);
+    return `<div class="row col">
+      <label>${label}</label>
+      <div class="range-row">
+        <input type="range" data-path="${path}" value="${v}" min="${min}" max="${max}" step="${step}">
+        <span class="range-val" data-rangeval="${path}">${v}${suffix}</span>
+      </div>
+    </div>`;
+  }
+
+  _select(path, label, options) {
+    const cur = this._val(path, options[0].value);
+    const opts = options.map(o => `<option value="${o.value}" ${cur === o.value ? 'selected' : ''}>${o.label}</option>`).join('');
+    return `<div class="row col"><label>${label}</label><select data-path="${path}">${opts}</select></div>`;
+  }
+
+  _toggle(path, label) {
+    const checked = this._val(path, false);
+    return `<div class="toggle-row"><label>${label}</label>
+      <label class="switch"><input type="checkbox" data-path="${path}" ${checked ? 'checked' : ''}><span class="slider-sw"></span></label>
+    </div>`;
+  }
+
+  _color(path, label, defaultColor) {
+    const fallback = defaultColor || '#e8824a';
+    let raw = this._val(path, fallback) || fallback;
+    // ensure valid 6-digit hex for native input
+    if (!raw.startsWith('#')) raw = '#' + raw;
+    if (!/^#[0-9a-fA-F]{6}$/.test(raw)) raw = fallback;
+    const display = raw.toUpperCase();
+    return `<div class="row col">
+      <label>${label}</label>
+      <div class="color-field" data-colorpath="${path}">
+        <div class="color-swatch" style="background:${raw}">
+          <input type="color" value="${raw}">
+        </div>
+        <div class="color-text">
+          <input type="text" class="color-hex" value="${display}" placeholder="#RRGGBB" maxlength="7">
+        </div>
+      </div>
+    </div>`;
+  }
+
+  _entityPicker() {
+    // Use HA's native ha-entity-picker if available, else plain text input
+    const v = this._val('entity', '');
+    if (customElements.get('ha-entity-picker')) {
+      return `<ha-entity-picker data-path="entity" value="${v}" allow-custom-entity></ha-entity-picker>`;
+    }
+    return this._text('entity', 'Entity', 'light.my_light');
+  }
+
+  _iconPicker() {
+    const v = this._val('icon', '');
+    if (customElements.get('ha-icon-picker')) {
+      return `<ha-icon-picker data-path="icon" value="${v}"></ha-icon-picker>`;
+    }
+    return this._text('icon', 'Icon (MDI)', 'mdi:lightbulb');
+  }
+
+  // Font loading is handled via @import inside the card's shadow DOM style.
+  // This stub exists so call sites don't break.
+  _loadGoogleFont(_family) {}
+
+  // Font families: web-safe + common Google Fonts (loaded on demand) + custom
+  _fontFamily(path, label) {
+    const PRESETS = [
+      { value: '',                    label: 'Default (inherit from theme)' },
+      // ── System / web-safe ──
+      { value: 'system-ui',           label: 'System UI' },
+      { value: 'Arial',               label: 'Arial' },
+      { value: 'Helvetica Neue',      label: 'Helvetica Neue' },
+      { value: 'Georgia',             label: 'Georgia' },
+      { value: 'Times New Roman',     label: 'Times New Roman' },
+      { value: 'Courier New',         label: 'Courier New' },
+      // ── Google Fonts ──
+      { value: 'Roboto',              label: 'Roboto' },
+      { value: 'Open Sans',           label: 'Open Sans' },
+      { value: 'Lato',                label: 'Lato' },
+      { value: 'Montserrat',          label: 'Montserrat' },
+      { value: 'Raleway',             label: 'Raleway' },
+      { value: 'Poppins',             label: 'Poppins' },
+      { value: 'Nunito',              label: 'Nunito' },
+      { value: 'Oswald',              label: 'Oswald' },
+      { value: 'Playfair Display',    label: 'Playfair Display' },
+      { value: 'Merriweather',        label: 'Merriweather' },
+      { value: 'Ubuntu',              label: 'Ubuntu' },
+      { value: 'Inter',               label: 'Inter' },
+      { value: 'Source Sans Pro',     label: 'Source Sans Pro' },
+      { value: 'Exo 2',               label: 'Exo 2' },
+      { value: 'Josefin Sans',        label: 'Josefin Sans' },
+      { value: 'Quicksand',           label: 'Quicksand' },
+      { value: '__custom__',          label: '✏ Custom…' },
+    ];
+    const cur = this._val(path, '');
+    const isCustom = cur && !PRESETS.find(p => p.value === cur && p.value !== '__custom__');
+    const selectVal = isCustom ? '__custom__' : cur;
+    const opts = PRESETS.map(p =>
+      `<option value="${p.value}"${selectVal === p.value ? ' selected' : ''}>${p.label}</option>`
+    ).join('');
+    return `<div class="row col">
+      <label>${label}</label>
+      <select data-path="${path}" data-font-select>
+        ${opts}
+      </select>
+      <input type="text" data-path="${path}" placeholder="e.g. Dancing Script"
+        style="${isCustom ? '' : 'display:none'}"
+        value="${isCustom ? cur : ''}"
+        data-font-custom>
+      <small class="font-hint" style="font-size:10px;color:var(--secondary-text-color,#8891a0);margin-top:2px">
+        Google Fonts are loaded automatically when selected.
+      </small>
+    </div>`;
+  }
+
+  _labelSection(prefix, title) {
+    const visPath = `${prefix}.visible`;
+    const visible = this._val(visPath, true);
+    return `
+      ${this._toggle(visPath, 'Visible')}
+      ${visible ? `
+        ${prefix === 'label_major' ? this._select(`${prefix}.position`, 'Position', [
+          {value:'bottom',label:'Bottom'},{value:'top',label:'Top'},
+          {value:'left',label:'Left'},{value:'right',label:'Right'},
+        ]) : ''}
+        ${this._text(`${prefix}.text`, 'Text (blank = entity name)')}
+        <div class="row">
+          <div class="third">${this._number(`${prefix}.font_size`, 'Size (px)', 8, 48)}</div>
+          <div class="third">${this._select(`${prefix}.font_weight`, 'Weight', [
+            {value:'300',label:'300 – Light'},{value:'400',label:'400 – Normal'},
+            {value:'500',label:'500 – Medium'},{value:'600',label:'600 – Semi'},
+            {value:'700',label:'700 – Bold'},{value:'800',label:'800 – Extra'},
+          ])}</div>
+          <div class="third">${this._select(`${prefix}.font_style`, 'Style', [
+            {value:'normal',label:'Normal'},{value:'italic',label:'Italic'},
+          ])}</div>
+        </div>
+        ${this._fontFamily(`${prefix}.font_family`, 'Font family')}
+        <div class="row">
+          <div class="half">${this._select(`${prefix}.text_transform`, 'Transform', [
+            {value:'none',label:'None'},{value:'uppercase',label:'Uppercase'},
+            {value:'lowercase',label:'Lowercase'},{value:'capitalize',label:'Capitalize'},
+          ])}</div>
+          <div class="half">${this._select(`${prefix}.align`, 'Align', [
+            {value:'center',label:'Center'},{value:'left',label:'Left'},{value:'right',label:'Right'},
+          ])}</div>
+        </div>
+        <div class="row">
+          <div class="half">${this._range(`${prefix}.letter_spacing`, 'Letter spacing (em)', 0, 0.3, 0.01)}</div>
+          <div class="half">${this._range(`${prefix}.opacity`, 'Opacity', 0, 1, 0.05)}</div>
+        </div>
+        <div class="row">
+          <div class="half">${this._color(`${prefix}.color`, 'Color', '#4a4f5a')}</div>
+          <div class="half">${this._number(`${prefix}.max_width`, 'Max width (px, 0=auto)', 0, 400)}</div>
+        </div>
+        ${this._toggle(`${prefix}.truncate`, 'Truncate with ellipsis')}
+      ` : ''}
+    `;
+  }
+
+  // ── main render ────────────────────────────────────────────────────────────
+  _render() {
+    const style = document.createElement('style');
+    style.textContent = EDITOR_STYLES;
+
+    const html = `
+    ${this._section('entity', 'Entity & Icon', '🔌', `
+      ${this._entityPicker()}
+      ${this._iconPicker()}
+      <div class="row">
+        <div class="half">${this._color('icon_on_color', 'Icon color ON', '#e8824a')}</div>
+        <div class="half">${this._color('icon_off_color', 'Icon color OFF', '#a0a0a8')}</div>
+      </div>
+      ${this._select('tap_action', 'Tap action', [
+        {value:'toggle',label:'Toggle'},{value:'more-info',label:'More info'},{value:'call-service',label:'Call service'},
+      ])}
+      ${this._val('tap_action','toggle') === 'call-service' ? `
+        ${this._text('service', 'Service (domain.service)', 'light.turn_on')}
+      ` : ''}
+      ${this._select('hold_action', 'Hold action', [
+        {value:'none',label:'None'},{value:'toggle',label:'Toggle'},
+        {value:'more-info',label:'More info'},{value:'call-service',label:'Call service'},
+      ])}
+      ${this._range('hold_timeout', 'Hold duration (ms)', 200, 2000, 50, 'ms')}
+      ${this._val('hold_action','none') === 'call-service' ? `
+        ${this._text('hold_service', 'Hold service (domain.service)', 'scene.turn_on')}
+      ` : ''}
+    `)}
+
+    ${this._section('button', 'Button style', '⬤', `
+      ${this._toggle('display_only', 'Display only (read-only value, no knob)')}
+      ${this._val('display_only', false) ? '' : `
+      <div class="row">
+        <div class="half">${this._range('size', 'Size (px)', 36, 120, 2, 'px')}</div>
+        <div class="half">${this._range('icon_size', 'Icon size (px)', 10, 80, 1, 'px')}</div>
+      </div>
+      ${this._select('shape', 'Shape', [
+        {value:'round',label:'Round (circle)'},{value:'squircle',label:'Squircle'},{value:'square',label:'Square'},
+      ])}
+      <div class="row">
+        <div class="half">${this._range('depth', '3D Depth', 0, 2, 0.1)}</div>
+        <div class="half">${this._range('glow_intensity', 'Glow intensity', 0, 2, 0.1)}</div>
+      </div>
+      ${this._toggle('show_dot', 'Show state dot')}
+      `}
+      ${this._select('card_mode', 'Card background', [
+        {value:'default', label:'Default — neumorphic card with shadow'},
+        {value:'flat',    label:'Flat — transparent, no shadow, small padding'},
+        {value:'none',    label:'None — invisible container, zero padding'},
+      ])}
+    `)}
+
+    ${this._section('anim', 'Icon animation', '✨', `
+      ${this._select('icon_animation', 'Animation (plays when ON)', [
+        {value:'none',label:'None'},{value:'pulse',label:'Pulse'},
+        {value:'spin',label:'Spin'},{value:'bounce',label:'Bounce'},
+        {value:'swing',label:'Swing'},{value:'flash',label:'Flash'},
+      ])}
+    `)}
+
+    ${this._section('major', 'Major label', '𝗔', this._labelSection('label_major', 'Major label'))}
+    ${this._section('minor', 'Minor label', 'ᴬ', this._labelSection('label_minor', 'Minor label'))}
+    `;
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    // ── wire up events ────────────────────────────────────────────────────────
+    // Text / number / color inputs → blur + enter
+    container.querySelectorAll('input[type=text], input[type=number]').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const v = e.target.type === 'number' ? Number(e.target.value) : e.target.value;
+        this._set(e.target.dataset.path, v);
+        this._render();
+      });
+    });
+
+    // ── Color fields: swatch (native color input hidden behind swatch) + text ──
+    container.querySelectorAll('.color-field').forEach(field => {
+      const path    = field.dataset.colorpath;
+      const swatch  = field.querySelector('.color-swatch');
+      const native  = field.querySelector('input[type=color]');
+      const text    = field.querySelector('input[type=text].color-hex');
+
+      // native color picker → update swatch bg + text field live
+      native.addEventListener('input', (e) => {
+        swatch.style.background = e.target.value;
+        text.value = e.target.value.toUpperCase();
+      });
+      native.addEventListener('change', (e) => {
+        swatch.style.background = e.target.value;
+        text.value = e.target.value.toUpperCase();
+        this._set(path, e.target.value);
+        this._render();
+      });
+
+      // text field → validate hex and update swatch
+      text.addEventListener('input', (e) => {
+        let v = e.target.value.trim();
+        if (!v.startsWith('#')) v = '#' + v;
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+          swatch.style.background = v;
+          native.value = v;
+        }
+      });
+      text.addEventListener('change', (e) => {
+        let v = e.target.value.trim();
+        if (!v.startsWith('#')) v = '#' + v;
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+          this._set(path, v);
+          this._render();
+        }
+      });
+    });
+
+    // Range sliders → live update value display + debounced config fire
+    container.querySelectorAll('input[type=range]').forEach(el => {
+      el.addEventListener('input', (e) => {
+        const valEl = this._shadow.querySelector(`[data-rangeval="${e.target.dataset.path}"]`);
+        if (valEl) valEl.textContent = e.target.value + (e.target.dataset.suffix ?? '');
+      });
+      el.addEventListener('change', (e) => {
+        this._set(e.target.dataset.path, Number(e.target.value));
+        this._render();
+      });
+    });
+
+    // Selects (including font-family with custom sub-field)
+    container.querySelectorAll('select').forEach(el => {
+      el.addEventListener('change', (e) => {
+        if (e.target.dataset.fontSelect !== undefined) {
+          const val = e.target.value;
+          const customInput = e.target.nextElementSibling;
+          if (val === '__custom__') {
+            customInput.style.display = '';
+            customInput.focus();
+            return; // don't fire config-changed yet; wait for text input
+          } else {
+            customInput.style.display = 'none';
+            if (val) this._loadGoogleFont(val);
+            this._set(e.target.dataset.path, val);
+            this._render();
+          }
+        } else {
+          this._set(e.target.dataset.path, e.target.value);
+          this._render();
+        }
+      });
+    });
+
+    // Custom font text inputs
+    container.querySelectorAll('input[data-font-custom]').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const v = e.target.value.trim();
+        if (v) this._loadGoogleFont(v);
+        this._set(e.target.dataset.path, v);
+        this._render();
+      });
+    });
+
+    // Toggles / checkboxes
+    container.querySelectorAll('input[type=checkbox]').forEach(el => {
+      el.addEventListener('change', (e) => {
+        this._set(e.target.dataset.path, e.target.checked);
+        this._render();
+      });
+    });
+
+    // Section collapse headers
+    container.querySelectorAll('.section-header').forEach(el => {
+      el.addEventListener('click', () => this._toggleSection(el.dataset.sec));
+    });
+
+    // ha-entity-picker / ha-icon-picker custom events
+    container.querySelectorAll('ha-entity-picker, ha-icon-picker').forEach(el => {
+      el.hass = this._hass;
+      el.addEventListener('value-changed', (e) => {
+        this._set(el.dataset.path, e.detail.value);
+        this._render();
+      });
+    });
+
+    this._shadow.innerHTML = '';
+    this._shadow.appendChild(style);
+    this._shadow.appendChild(container);
+  }
+}
+
+customElements.define('neumorphic-button-card-editor', NeumorphicButtonCardEditor);
+
+// Link editor to card
+NeumorphicButtonCard.prototype.getCardSize = function() {
+  const s = this._config?._knobSize ?? 68;
+  return s >= 100 ? 3 : s <= 48 ? 1 : 2;
+};
+
+// ── Wire editor to card (all HA hooks) ───────────────────────────────────────
+// Hook 1: newer HA versions call getConfigElement()
+NeumorphicButtonCard.getConfigElement = () => document.createElement('neumorphic-button-card-editor');
+// Hook 2: some HA versions read the cardEditor property
+NeumorphicButtonCard.cardEditor = 'neumorphic-button-card-editor';
+
+(window.customCards = window.customCards ?? []).push({
+  type:        'neumorphic-button-card',
+  name:        'Neumorphic Button Card',
+  description: 'Neumorphic button v10. card_mode, icon_off_color, hold_action, shape, depth, glow, labels, animations.',
+  preview:     true,
+  documentationURL: 'https://github.com/etnlbck/hacs-neumorphic-template',
+});
+
+console.info(
+  '%c NEUMORPHIC-BUTTON-CARD %c v15 ',
+  'color:#fff;background:#e8824a;padding:2px 6px;border-radius:4px 0 0 4px;font-weight:700',
+  'color:#e8824a;background:#1c1c1c;padding:2px 6px;border-radius:0 4px 4px 0;font-weight:700',
+);
+
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+ * neumorphic-slider-card.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+/**
+ * Neumorphic Slider Card  v2  —  UNIFIED
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Single card, orientation: vertical (default) | horizontal.
+ *
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  type: custom:neumorphic-slider-card                                     ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ── Orientation ────────────────────────────────────────────────────────────
+ *   orientation: vertical            # vertical (default) | horizontal
+ *
+ * ── Entity & value range ───────────────────────────────────────────────────
+ *   entity: light.living_room        # REQUIRED
+ *   min: 0  /  max: 100  /  step: 1
+ *   attribute: brightness            # HA attribute; brightness auto-scaled 0-100
+ *   service: light.turn_on  /  service_data_key: brightness_pct
+ *
+ * ── Labels & visibility ────────────────────────────────────────────────────
+ *   name: Brightness   unit: "%"   icon: mdi:brightness-6
+ *   show_value: true   show_range: true   show_border: true   show_icon_border: true
+ *   label_min: "Off"   label_max: "Max"
+ *
+ * ── Fill ───────────────────────────────────────────────────────────────────
+ *   fill_mode: solid                 # solid | none | gradient
+ *   fill_color_start: "#56d3f5"      # gradient start (bottom/left)
+ *   fill_color_end:   "#e0c97f"      # gradient end   (top/right)
+ *   fill_opacity: 0.72
+ *
+ * ── Colors ─────────────────────────────────────────────────────────────────
+ *   color: "#e0c97f"   background_color: "#e0e5ec"
+ *   shadow_dark: "rgba(163,177,198,0.6)"   shadow_light: "rgba(255,255,255,0.9)"
+ *   text_color: "#3d4f6b"   label_color: "#8a9bb2"   icon_color: ""
+ *
+ * ── Glow ───────────────────────────────────────────────────────────────────
+ *   glow: true
+ *   glow_intensity: 0.6     # 0–1 scalar; 0=off 0.3=subtle 0.6=normal 1.0=blazing
+ *   glow_size: 18   glow_opacity: 0.55
+ *
+ * ── Thumb — axis-aware sizing ──────────────────────────────────────────────
+ *   thumb_thickness: 46      # size ACROSS the travel direction
+ *                            #   vertical   → CSS width  (left ↔ right)
+ *                            #   horizontal → CSS height (up ↕ down)
+ *   thumb_length: 24         # size ALONG the travel direction
+ *                            #   vertical   → CSS height (up ↕ down)
+ *                            #   horizontal → CSS width  (left ↔ right)
+ *
+ *   thumb_shape: pill        # pill (default) | rounded | square
+ *   thumb_radius: 12         # explicit — overrides thumb_shape
+ *   thumb_shadow_size: 5
+ *
+ *   Low-level (bypass axis mapping, take priority):
+ *   thumb_width: 46   thumb_height: 24
+ *
+ * ── Track ──────────────────────────────────────────────────────────────────
+ *   track_length: 280        # travel distance px (height V / fills width H)
+ *   track_thickness: 6       # groove width V or groove height H
+ *   track_radius: 3
+ *
+ * ── Icon ───────────────────────────────────────────────────────────────────
+ *   icon_size: 46   icon_box_radius: 13   icon_mdi_size: 22
+ *
+ * ── Card shell ─────────────────────────────────────────────────────────────
+ *   card_radius: 22   card_padding: "24px 20px 20px"   card_shadow_size: 7
+ *
+ * ── Spacing ────────────────────────────────────────────────────────────────
+ *   header_gap: 6   header_margin: 18   footer_margin: 14
+ *
+ * ── Typography ─────────────────────────────────────────────────────────────
+ *   font_name: "0.76rem"   font_value: "1.05rem"   font_range: "0.68rem"
+ *
+ * ── Grip ───────────────────────────────────────────────────────────────────
+ *   grip_lines: 3   grip_width: 18   grip_height: 2   grip_gap: 3.5
+ */
+
+class NeumorphicSliderCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._dragging = false;
+    this._value    = null;
+    this._config   = {};
+    this._bound_onMove = this._onMove.bind(this);
+    this._bound_onUp   = this._onUp.bind(this);
+  }
+
+  /* ─── HA lifecycle ──────────────────────────────────────────────── */
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._config.entity) return;
+    const stateObj = hass.states[this._config.entity];
+    if (!stateObj) return;
+
+    const c = this._config;
+    let raw;
+
+    if (c.attribute) {
+      /* explicit attribute requested */
+      raw = stateObj.attributes[c.attribute];
+      if (c.attribute === "brightness" && raw !== undefined)
+        raw = Math.round((raw / 255) * 100);
+    } else {
+      const state = stateObj.state;
+      if (state === "unavailable" || state === "unknown") {
+        raw = c.min;
+      } else {
+        const num = parseFloat(state);
+        if (!isNaN(num)) {
+          /* numeric state (input_number, sensor, etc.) */
+          raw = num;
+        } else {
+          /* non-numeric state (on/off, etc.) — try brightness attribute */
+          const domain = c.entity.split(".")[0];
+          if (domain === "light" && stateObj.attributes.brightness !== undefined) {
+            raw = Math.round((stateObj.attributes.brightness / 255) * 100);
+          } else if (state === "on") {
+            raw = c.max;
+          } else if (state === "off") {
+            raw = c.min;
+          } else {
+            raw = c.min;
+          }
+        }
+      }
+    }
+
+    if (raw == null || isNaN(raw)) raw = c.min;
+    raw = Math.min(c.max, Math.max(c.min, raw));
+    if (!this._dragging && raw !== this._value) { this._value = raw; this._updateVisuals(); }
+  }
+
+  setConfig(config) {
+    if (!config.entity) throw new Error("neumorphic-slider-card: 'entity' is required");
+
+    const isH = (config.orientation || "vertical") === "horizontal";
+
+    this._config = {
+      orientation:     "vertical",
+      min: 0, max: 100, step: 1,
+      show_value: true, show_range: true, show_border: true, show_icon_border: true,
+      display_only: false,         // true = read-only display, no slider/track/thumb/range labels
+      /* use_theme_colors: false (default) — use explicit color config values
+         use_theme_colors: true            — pull all colors from HA theme CSS vars,
+         ignoring background_color, shadow_dark, shadow_light, text_color, label_color */
+      use_theme_colors: false,
+      /* label_position: "start" (default) | "end"
+         start = before the slider (top for V, left for H)
+         end   = after  the slider (bottom for V, right for H)
+         label_main  = primary label (replaces/aliases "name")
+         label_minor = secondary smaller label below label_main  */
+      label_position: "start",
+      fill_mode: "solid", fill_opacity: 0.72,
+      glow: true, glow_size: 18, glow_opacity: 0.55,
+      color: "#e0c97f", background_color: "#e0e5ec",
+      shadow_dark: "rgba(163,177,198,0.6)", shadow_light: "rgba(255,255,255,0.9)",
+      text_color: "#3d4f6b", label_color: "#8a9bb2",
+      /* track */
+      track_length:    isH ? 0 : 280,   // 0 = stretch-to-fill for horizontal
+      track_thickness: 6,
+      track_radius:    3,
+      /* thumb axis-aware defaults */
+      thumb_thickness: isH ? 24 : 46,   // across travel (narrow dim)
+      thumb_length:    isH ? 46 : 24,   // along  travel (long  dim)
+      thumb_shadow_size: 5,
+      // thumb_shape: round (default) | squircle | square
+      /* icon */
+      icon_size: isH ? 38 : 46, icon_box_radius: isH ? 11 : 13, icon_mdi_size: isH ? 20 : 22,
+      /* card */
+      card_radius: 22, card_padding: isH ? "20px 24px 18px" : "24px 20px 20px", card_shadow_size: 7,
+      /* spacing */
+      header_gap: isH ? 10 : 6, header_margin: isH ? 16 : 18, footer_margin: isH ? 10 : 14,
+      /* typography */
+      font_name: "0.76rem", font_value: "1.05rem", font_range: "0.68rem",
+      /* grip */
+      grip_lines: 3, grip_width: isH ? 12 : 18, grip_height: 2, grip_gap: 3.5,
+      /* icon animation */
+      icon_animation:         "none",  // none | spin | pulse | bounce | shake | ping | blink
+      icon_animation_speed_min: 3.0,   // seconds at value=min (slowest)
+      icon_animation_speed_max: 0.2,   // seconds at value=max (fastest)
+      ...config,
+    };
+
+    const c = this._config;
+    if (!c.icon_color) c.icon_color = c.color;
+
+    /* ── label_main / label_minor aliases ─────────────────────────
+     * "name" still works as backward-compat alias for label_main.
+     * Explicit empty string in label_main means "no label" — do NOT
+     * fall back to name in that case.                               */
+    if (c.label_main === undefined && c.name) c.label_main = c.name;
+    /* Treat explicit empty string as "hide label" */
+    if (c.label_main === "") c.label_main = undefined;
+    if (c.label_minor === "") c.label_minor = undefined;
+
+    /* ── Resolve pixel dims from axis-aware names ──────────────────
+     *
+     *  VERTICAL:   CSS width  = thumb_thickness  (across = left-right)
+     *              CSS height = thumb_length      (along  = up-down)
+     *
+     *  HORIZONTAL: CSS width  = thumb_length      (along  = left-right)
+     *              CSS height = thumb_thickness   (across = up-down)
+     *
+     *  Explicit thumb_width / thumb_height always win.               */
+    if (c.thumb_width  === undefined) c.thumb_width  = isH ? c.thumb_length    : c.thumb_thickness;
+    if (c.thumb_height === undefined) c.thumb_height = isH ? c.thumb_thickness : c.thumb_length;
+
+    /* ── thumb_shape → radius ──────────────────────────────────────────
+     *  New names:  round | squircle | square
+     *  Old aliases: pill → round,  rounded → squircle  (back-compat)
+     *
+     *  round     → fully rounded short side (radius = thickness/2)
+     *  squircle  → smooth rounded rectangle (~30% of short side)
+     *  square    → barely rounded corners (2px, almost sharp)
+     *
+     *  explicit thumb_radius always wins over shape                    */
+    if (c.thumb_radius === undefined) {
+      const ref  = c.thumb_thickness;
+      const shape = c.thumb_shape;
+      if      (shape === "square")                    c.thumb_radius = 2;
+      else if (shape === "squircle" || shape === "rounded") c.thumb_radius = Math.round(ref * 0.30);
+      else                                            c.thumb_radius = Math.round(ref / 2); // round / pill / default
+    }
+
+    /* ── glow_intensity → size + opacity ── */
+    if (c.glow_intensity !== undefined) {
+      const t = Math.min(1, Math.max(0, c.glow_intensity));
+      if (t === 0) { c.glow = false; }
+      else {
+        c.glow         = true;
+        c.glow_size    = Math.round(4 + t * 28);
+        c.glow_opacity = parseFloat((0.1 + t * 0.75).toFixed(2));
+      }
+    }
+
+    this._value = c.min;
+    this._render();
+  }
+
+  getCardSize() {
+    return this._config.orientation === "horizontal" ? 1 : 3;
+  }
+
+  /* HA calls these to wire up the visual editor */
+  static getConfigElement() {
+    return document.createElement("neumorphic-slider-card-editor");
+  }
+
+  static getStubConfig() {
+    return {
+      entity:      "input_number.example",
+      orientation: "vertical",
+      name:        "Brightness",
+      unit:        "%",
+      color:       "#e0c97f",
+    };
+  }
+
+  /* ─── Render ────────────────────────────────────────────────────── */
+
+  _render() {
+    const c   = this._config;
+    const isH = c.orientation === "horizontal";
+    const ss  = c.card_shadow_size;
+    const ts  = c.thumb_shadow_size;
+    const TW  = c.thumb_width;
+    const TH  = c.thumb_height;
+
+    /* ── colour resolution ─────────────────────────────────────────
+     * use_theme_colors: true  → CSS var() references so HA theme vars
+     *                           are applied automatically at paint time.
+     *   --nm-bg           card / thumb background
+     *   --nm-shadow-dark  dark shadow arm
+     *   --nm-shadow-light light shadow arm
+     *   --nm-text         value text colour
+     *   --nm-label        label / range text colour
+     *   --nm-accent       fill / glow accent colour
+     *
+     * The card injects a <style> block that sets these vars from the
+     * neumorphic-template theme variables (or HA defaults) when
+     * use_theme_colors is true.  Explicit config values always win
+     * when use_theme_colors is false.                                */
+
+    const useTheme = c.use_theme_colors === true;
+
+    /* values used inline in JS (box-shadow strings etc.) */
+    const bg  = useTheme ? "var(--nm-bg)"           : c.background_color;
+    const acc = useTheme ? "var(--nm-accent)"        : c.color;
+    const sd  = useTheme ? "var(--nm-shadow-dark)"  : c.shadow_dark;
+    const sl  = useTheme ? "var(--nm-shadow-light)" : c.shadow_light;
+    const tc  = useTheme ? "var(--nm-text)"         : c.text_color;
+    const lc  = useTheme ? "var(--nm-label)"        : c.label_color;
+    const ic  = useTheme ? "var(--nm-accent)"        : c.icon_color;
+
+    /* theme variable injection block — only emitted when use_theme_colors */
+    const themeVarsCSS = useTheme ? `
+        :host {
+          --nm-bg:           var(--primary-background-color,       #e0e5ec);
+          --nm-accent:       var(--primary-color,                  #e0c97f);
+          --nm-text:         var(--primary-text-color,             #3d4f6b);
+          --nm-label:        var(--secondary-text-color,           #8a9bb2);
+          --nm-shadow-dark:  var(--nm-shadow-dark-color,  var(--neumorphic-shadow-dark,  rgba(163,177,198,0.6)));
+          --nm-shadow-light: var(--nm-shadow-light-color, var(--neumorphic-shadow-light, rgba(255,255,255,0.9)));
+        }` : "";
+
+    /* glow shadow string ─────────────────────────────────────────
+     * In theme mode we cannot nest var() inside box-shadow colour
+     * slots reliably, so we build the glow using the explicit
+     * config opacity against the explicit color fallback.
+     * When use_theme_colors the accent colour from the theme is
+     * unknown at JS time, so we use the explicit c.color value
+     * (or its default) for the glow rgba — a reasonable trade-off. */
+    const glowColor   = c.color || "#e0c97f";
+    const glowRgba    = c.glow ? this._hexToRgba(glowColor, c.glow_opacity) : null;
+    const glowCSS     = c.glow ? `, 0 0 ${c.glow_size}px ${Math.round(c.glow_size*1.5)}px ${glowRgba}` : "";
+
+    const hasHeader = c.icon || c.label_main || c.label_minor || c.show_value !== false;
+    const minLabel  = c.label_min !== undefined ? c.label_min : `${c.min}${c.unit || ""}`;
+    const maxLabel  = c.label_max !== undefined ? c.label_max : `${c.max}${c.unit || ""}`;
+    const labelAtEnd = (c.label_position || "start") === "end";
+
+    const fillBg =
+      c.fill_mode === "none"     ? "transparent" :
+      c.fill_mode === "gradient" ? (isH
+        ? `linear-gradient(to right, ${c.fill_color_start || acc}, ${c.fill_color_end || acc})`
+        : `linear-gradient(to top,   ${c.fill_color_start || acc}, ${c.fill_color_end || acc})`)
+      : acc;
+
+    const gripLines = Array(Math.max(1, c.grip_lines)).fill(0)
+      .map(() => `<div class="grip-line"></div>`).join("");
+
+    /* The label block HTML — shared for both start and end positions */
+    const labelBlockHtml = hasHeader ? `<div class="header">
+          ${c.icon  ? `<div class="icon-wrap"><div class="icon-anim" id="icon-anim"><ha-icon icon="${c.icon}"></ha-icon></div></div>` : ""}
+          ${c.label_main ? `<div class="label-main">${c.label_main}</div>` : (isH && !labelAtEnd ? `<div class="spacer"></div>` : "")}
+          ${c.label_minor ? `<div class="label-minor">${c.label_minor}</div>` : ""}
+          ${c.show_value !== false ? `<div class="value-badge" id="value-badge">—</div>` : ""}
+        </div>` : "";
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: block; font-family: var(--primary-font-family,'Nunito',sans-serif); }
+        ${themeVarsCSS}
+
+        .card {
+          background:    ${c.show_border !== false ? bg : "transparent"};
+          border-radius: ${c.show_border !== false ? c.card_radius + "px" : "0"};
+          padding:       ${c.show_border !== false ? c.card_padding : "0"};
+          box-shadow:    ${c.show_border !== false
+            ? `${ss}px ${ss}px ${ss*2}px ${sd}, -${ss}px -${ss}px ${ss*2}px ${sl}` : "none"};
+          display: flex; flex-direction: column;
+          ${isH ? "" : "align-items: center;"}
+          user-select: none; -webkit-user-select: none;
+        }
+
+        /* ── header — before or after slider ── */
+        .header {
+          display: flex;
+          flex-direction: ${isH ? "row" : "column"};
+          align-items: center;
+          gap: ${c.header_gap}px;
+          ${labelAtEnd
+            ? `margin-top: ${c.header_margin}px;`
+            : `margin-bottom: ${c.header_margin}px;`}
+          width: 100%;
+        }
+        .icon-wrap {
+          ${isH ? "flex-shrink: 0;" : ""}
+          width: ${c.icon_size}px; height: ${c.icon_size}px;
+          border-radius: ${c.icon_box_radius}px;
+          background: ${c.show_icon_border !== false ? bg : "transparent"};
+          box-shadow:  ${c.show_icon_border !== false ? `4px 4px 10px ${sd}, -4px -4px 10px ${sl}` : "none"};
+          display: flex; align-items: center; justify-content: center;
+        }
+        .icon-wrap ha-icon { color: ${ic}; --mdc-icon-size: ${c.icon_mdi_size}px; }
+
+        /* ── Icon animation keyframes ── */
+        @keyframes nm-spin   { to { transform: rotate(360deg); } }
+        @keyframes nm-pulse  { 0%,100% { transform: scale(1);    opacity: 1;   }
+                               50%     { transform: scale(1.35); opacity: 0.7; } }
+        @keyframes nm-bounce { 0%,100% { transform: translateY(0);    animation-timing-function: ease-in;  }
+                               50%     { transform: translateY(-30%); animation-timing-function: ease-out; } }
+        @keyframes nm-shake  { 0%,100% { transform: rotate(0deg);    }
+                               20%     { transform: rotate(-15deg);   }
+                               40%     { transform: rotate(15deg);    }
+                               60%     { transform: rotate(-10deg);   }
+                               80%     { transform: rotate(10deg);    } }
+        @keyframes nm-ping   { 0%   { transform: scale(1);    opacity: 1;   }
+                               75%  { transform: scale(1.5);  opacity: 0;   }
+                               100% { transform: scale(1.5);  opacity: 0;   } }
+        @keyframes nm-blink  { 0%,100% { opacity: 1;   }
+                               50%     { opacity: 0.15; } }
+
+        .icon-anim {
+          display: flex; align-items: center; justify-content: center;
+          animation-iteration-count: infinite;
+          animation-timing-function: linear;
+          will-change: transform, opacity;
+          transform-origin: center center;
+        }
+
+        /* ── label_main — primary title ── */
+        .label-main {
+          ${isH ? "flex: 1;" : ""}
+          font-size: ${c.font_name}; font-weight: 700;
+          letter-spacing: 0.07em; text-transform: uppercase; color: ${lc};
+        }
+        /* ── label_minor — secondary subtitle ── */
+        .label-minor {
+          ${isH ? "flex-shrink: 0;" : ""}
+          font-size: ${c.font_minor || "0.65rem"}; font-weight: 500;
+          letter-spacing: 0.04em; color: ${lc}; opacity: 0.72;
+        }
+        .value-badge {
+          ${isH ? "flex-shrink: 0;" : ""}
+          font-size: ${c.font_value}; font-weight: 800;
+          color: ${tc}; letter-spacing: 0.02em;
+        }
+        .spacer { flex: 1; }
+
+        .slider-area {
+          position: relative;
+          ${isH
+            ? `width: 100%; height: ${TH}px; align-items: center; cursor: ew-resize;`
+            : `width: 100%; height: ${c.track_length}px; align-items: center; justify-content: center; cursor: ns-resize;`}
+          display: flex; touch-action: none;
+        }
+
+        .track {
+          position: absolute;
+          ${isH
+            ? `top: 50%; transform: translateY(-50%); left: 0; right: 0; height: ${c.track_thickness}px;`
+            : `left: 50%; transform: translateX(-50%); width: ${c.track_thickness}px; height: 100%;`}
+          border-radius: ${c.track_radius}px;
+          background: ${bg};
+          box-shadow: inset 2px 2px 5px ${sd}, inset -2px -2px 5px ${sl};
+          overflow: hidden;
+        }
+        .track-fill {
+          position: absolute;
+          ${isH ? "top: 0; left: 0; height: 100%;" : "bottom: 0; left: 0; width: 100%;"}
+          border-radius: ${c.track_radius}px;
+          background: ${fillBg};
+          opacity: ${c.fill_mode === "none" ? 0 : c.fill_opacity};
+          transition: ${isH ? "width" : "height"} 0.05s linear;
+        }
+
+        .thumb {
+          position: absolute;
+          ${isH ? "top: 50%; transform: translateY(-50%);" : "left: 50%; transform: translateX(-50%);"}
+          width: ${TW}px; height: ${TH}px;
+          border-radius: ${c.thumb_radius}px;
+          background: ${bg};
+          box-shadow: ${ts}px ${ts}px ${ts*2+2}px ${sd}, -${ts}px -${ts}px ${ts*2+2}px ${sl}${glowCSS};
+          cursor: grab; transition: box-shadow 0.18s ease;
+          display: flex; align-items: center; justify-content: center; z-index: 2;
+        }
+        .thumb.active {
+          cursor: grabbing;
+          box-shadow: 2px 2px 6px ${sd}, -2px -2px 6px ${sl}${glowCSS};
+        }
+
+        .grip { display: flex; flex-direction: column; gap: ${c.grip_gap}px; pointer-events: none; }
+        .grip-line {
+          width: ${c.grip_width}px; height: ${c.grip_height}px; border-radius: ${c.grip_height}px;
+          background: linear-gradient(90deg, rgba(163,177,198,0.35), rgba(255,255,255,0.85), rgba(163,177,198,0.35));
+        }
+
+        /* ── Range labels ──
+           Horizontal: single row min-left / max-right below track
+           Vertical:   max above slider-area / min below slider-area,
+                       centred, each in its own element               */
+        .footer {
+          ${isH
+            ? `margin-top: ${c.footer_margin}px;
+               width: 100%;
+               display: flex; flex-direction: row;
+               justify-content: space-between; padding: 0 3px;`
+            : `display: contents;`}
+        }
+        .range-min, .range-max {
+          font-size: ${c.font_range}; font-weight: 600; color: ${lc}; opacity: 0.75;
+          text-align: center;
+        }
+        .range-max { margin-bottom: ${c.footer_margin}px; }
+        .range-min { margin-top:    ${c.footer_margin}px; }
+      </style>
+
+      <div class="card">
+        ${!labelAtEnd ? labelBlockHtml : ""}
+
+        ${c.show_range !== false && !isH ? `<div class="range-max">${maxLabel}</div>` : ""}
+
+        <div class="slider-area" id="slider-area" style="${c.display_only ? "cursor:default;" : ""}">
+          <div class="track"><div class="track-fill" id="track-fill"></div></div>
+          ${!c.display_only ? `<div class="thumb" id="thumb"><div class="grip">${gripLines}</div></div>` : ""}
+        </div>
+
+        ${c.show_range !== false ? (isH
+          ? `<div class="footer"><span>${minLabel}</span><span>${maxLabel}</span></div>`
+          : `<div class="range-min">${minLabel}</div>`) : ""}
+
+        ${labelAtEnd ? labelBlockHtml : ""}
+      </div>
+    `;
+
+    this._thumb      = this.shadowRoot.getElementById("thumb");
+    this._fill       = this.shadowRoot.getElementById("track-fill");
+    this._badge      = this.shadowRoot.getElementById("value-badge");
+    this._sliderArea = this.shadowRoot.getElementById("slider-area");
+    this._iconAnim   = this.shadowRoot.getElementById("icon-anim");
+    if (!this._config.display_only) this._attachEvents();
+    this._updateVisuals();
+  }
+
+  /* ─── Visuals ───────────────────────────────────────────────────── */
+
+  _updateVisuals() {
+    if (!this._badge && !this._fill) return;
+    const c   = this._config;
+    const isH = c.orientation === "horizontal";
+    const pct = (this._value - c.min) / (c.max - c.min);
+
+    /* value badge — always */
+    if (this._badge)
+      this._badge.textContent = `${this._fmt(this._value)}${c.unit || ""}`;
+
+    /* fill bar — present in both normal and display_only mode */
+    if (this._fill) {
+      if (isH) this._fill.style.width  = `${pct * 100}%`;
+      else     this._fill.style.height = `${pct * 100}%`;
+    }
+
+    /* thumb position — only in normal mode */
+    if (!c.display_only && this._thumb) {
+      if (isH) {
+        const areaW  = this._sliderArea ? this._sliderArea.offsetWidth : 300;
+        const usable = Math.max(1, areaW - c.thumb_width);
+        this._thumb.style.left = `${pct * usable}px`;
+      } else {
+        const usable = Math.max(1, c.track_length - c.thumb_height);
+        this._thumb.style.top = `${(1 - pct) * usable}px`;
+      }
+
+      /* live glow colour for gradient fill */
+      if (c.glow && c.fill_mode === "gradient" && c.fill_color_start && c.fill_color_end) {
+        const gc = this._lerpColor(c.fill_color_start, c.fill_color_end, pct);
+        const gr = this._hexToRgba(gc, c.glow_opacity);
+        const gs = c.glow_size, ts = c.thumb_shadow_size;
+        this._thumb.style.boxShadow =
+          `${ts}px ${ts}px ${ts*2+2}px ${c.shadow_dark}, -${ts}px -${ts}px ${ts*2+2}px ${c.shadow_light}` +
+          `, 0 0 ${gs}px ${Math.round(gs * 1.5)}px ${gr}`;
+      }
+    }
+
+    this._updateIconAnim(pct, c);
+  }
+
+  _updateIconAnim(pct, c) {
+    if (!this._iconAnim) return;
+    if (c.icon_animation && c.icon_animation !== "none") {
+      const animName = `nm-${c.icon_animation}`;
+      const sMin = parseFloat(c.icon_animation_speed_min);
+      const sMax = parseFloat(c.icon_animation_speed_max);
+      if (pct <= 0) {
+        this._iconAnim.style.animationName      = animName;
+        this._iconAnim.style.animationDuration  = `${sMin}s`;
+        this._iconAnim.style.animationPlayState = "paused";
+      } else {
+        const dur = sMin + (sMax - sMin) * pct;
+        this._iconAnim.style.animationName           = animName;
+        this._iconAnim.style.animationDuration       = `${dur.toFixed(3)}s`;
+        this._iconAnim.style.animationPlayState      = "running";
+        this._iconAnim.style.animationTimingFunction =
+          (c.icon_animation === "bounce") ? "cubic-bezier(0.33,0,0.66,0)" :
+          (c.icon_animation === "shake")  ? "ease-in-out" : "linear";
+      }
+    } else {
+      this._iconAnim.style.animationName = "none";
+    }
+  }
+
+  _fmt(v) {
+    return Number.isInteger(this._config.step) ? Math.round(v) : parseFloat(v.toFixed(1));
+  }
+
+  /* ─── Events ────────────────────────────────────────────────────── */
+
+  _attachEvents() {
+    this._sliderArea.addEventListener("mousedown",  e => this._onDown(e));
+    this._sliderArea.addEventListener("touchstart", e => this._onDown(e), { passive: false });
+  }
+  _onDown(e) {
+    e.preventDefault(); this._dragging = true; this._thumb.classList.add("active");
+    this._processEvent(e);
+    window.addEventListener("mousemove",  this._bound_onMove);
+    window.addEventListener("touchmove",  this._bound_onMove, { passive: false });
+    window.addEventListener("mouseup",    this._bound_onUp);
+    window.addEventListener("touchend",   this._bound_onUp);
+  }
+  _onMove(e) { if (this._dragging) { e.preventDefault(); this._processEvent(e); } }
+  _onUp() {
+    if (!this._dragging) return;
+    this._dragging = false; this._thumb.classList.remove("active");
+    window.removeEventListener("mousemove",  this._bound_onMove);
+    window.removeEventListener("touchmove",  this._bound_onMove);
+    window.removeEventListener("mouseup",    this._bound_onUp);
+    window.removeEventListener("touchend",   this._bound_onUp);
+    this._callService();
+  }
+
+  _processEvent(e) {
+    const touch = e.touches ? e.touches[0] : e;
+    const rect  = this._sliderArea.getBoundingClientRect();
+    const c     = this._config;
+    const isH   = c.orientation === "horizontal";
+    let pct;
+
+    if (isH) {
+      const usable = Math.max(1, rect.width - c.thumb_width);
+      const relX = Math.min(usable, Math.max(0, touch.clientX - rect.left - c.thumb_width / 2));
+      pct = relX / usable;
+    } else {
+      const half   = c.thumb_height / 2;
+      const usable = Math.max(1, c.track_length - c.thumb_height);
+      const relY   = Math.min(c.track_length - half, Math.max(half, touch.clientY - rect.top));
+      pct = 1 - (relY - half) / usable;
+    }
+
+    const raw = c.min + pct * (c.max - c.min);
+    this._value = Math.min(c.max, Math.max(c.min, Math.round(raw / c.step) * c.step));
+    this._updateVisuals();
+  }
+
+  /* ─── Service ───────────────────────────────────────────────────── */
+
+  _callService() {
+    if (!this._hass) return;
+    const c = this._config;
+    if (c.service) {
+      const [d, n] = c.service.split(".");
+      this._hass.callService(d, n, { entity_id: c.entity, [c.service_data_key || "value"]: this._value });
+      return;
+    }
+    const domain = c.entity.split(".")[0];
+    const map = {
+      light:        ["light",        "turn_on",            { brightness_pct: this._value }],
+      cover:        ["cover",        "set_cover_position", { position:        this._value }],
+      media_player: ["media_player", "volume_set",         { volume_level:    this._value / 100 }],
+      climate:      ["climate",      "set_temperature",    { temperature:     this._value }],
+      fan:          ["fan",          "set_percentage",     { percentage:      this._value }],
+      input_number: ["input_number", "set_value",          { value:           this._value }],
+    };
+    const [d, n, data] = map[domain] || ["input_number", "set_value", { value: this._value }];
+    this._hass.callService(d, n, { entity_id: c.entity, ...data });
+  }
+
+  /* ─── Util ──────────────────────────────────────────────────────── */
+
+  _hexToRgba(hex, alpha) {
+    if (!hex?.startsWith("#")) return `rgba(224,201,127,${alpha})`;
+    let h = hex.replace("#", "");
+    if (h.length === 3) h = h.split("").map(x => x + x).join("");
+    const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  _lerpColor(a, b, t) {
+    const p = hex => {
+      let h = hex.replace("#","");
+      if (h.length===3) h = h.split("").map(x=>x+x).join("");
+      return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+    };
+    const [r1,g1,b1] = p(a), [r2,g2,b2] = p(b);
+    return `#${[
+      Math.round(r1+(r2-r1)*t),
+      Math.round(g1+(g2-g1)*t),
+      Math.round(b1+(b2-b1)*t)
+    ].map(v=>v.toString(16).padStart(2,"0")).join("")}`;
+  }
+}
+
+customElements.define("neumorphic-slider-card", NeumorphicSliderCard);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VISUAL EDITOR
+   Registered as  neumorphic-slider-card-editor  (HA convention).
+   HA injects:  setConfig(config)  and  set hass(hass)
+   Editor fires: config-changed  CustomEvent with detail { config }
+   ══════════════════════════════════════════════════════════════════════════ */
+
+class NeumorphicSliderCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._hass   = null;
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  setConfig(config) {
+    this._config = { ...config };
+    this._render();
+  }
+
+  /* ── fire change up to HA ── */
+  _fire(config) {
+    this._config = config;
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
+  }
+
+  /* ── patch one key and fire ── */
+  _set(key, value) {
+    const next = { ...this._config };
+    if (value === "" || value === null || value === undefined) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+    this._fire(next);
+  }
+
+  /* ── value helpers ── */
+  _v(key, fallback = "") {
+    return this._config[key] !== undefined ? this._config[key] : fallback;
+  }
+
+  /* ── render ── */
+  _render() {
+    const c = this._config;
+    const isH = (c.orientation || "vertical") === "horizontal";
+
+    /* helper: render a labeled row using CSS grid — always perfectly aligned */
+    const row = (label, inputsHtml, hint = "") => `
+      <div class="row">
+        <span class="row-label">${label}</span>
+        <div class="row-inputs">${inputsHtml}</div>
+      </div>${hint ? `<div class="hint">${hint}</div>` : ""}`;
+
+    /* helper: number input */
+    const num = (id, val, { min="", max="", step="1", placeholder="" } = {}) =>
+      `<input type="number" id="${id}" value="${val}" ${min!==""?"min="+min:""} ${max!==""?"max="+max:""} step="${step}" ${placeholder?`placeholder="${placeholder}"`:""}>`;
+
+    /* helper: text input */
+    const txt = (id, val, placeholder = "") =>
+      `<input type="text" id="${id}" value="${this._esc(val)}" ${placeholder?`placeholder="${placeholder}"`:""}>`;
+
+    /* helper: select */
+    const sel = (id, options, current) =>
+      `<select id="${id}">${options.map(([v,l]) => `<option value="${v}"${current===v?" selected":""}>${l}</option>`).join("")}</select>`;
+
+    /* helper: color swatch + text */
+    const colorRow = (id, label, def) => row(label, `
+      <div class="color-wrap">
+        <input type="color" id="${id}_swatch" value="${this._v(id, def)||"#e0e5ec"}">
+        ${txt(id, this._v(id, def), def||"(inherit)")}
+      </div>`);
+
+    /* helper: range slider with live readout */
+    const range = (id, val, min, max, step, decimals=2) =>
+      `<input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}">
+       <span class="range-val" id="${id}_val">${(+val).toFixed(decimals)}</span>`;
+
+    /* helper: toggle checkbox */
+    const toggle = (id, label, checked) =>
+      `<div class="toggle"><input type="checkbox" id="${id}"${checked?" checked":""}><label for="${id}">${label}</label></div>`;
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: block; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #333); }
+
+        .editor { padding: 2px 0; display: flex; flex-direction: column; }
+
+        /* ── section heading ── */
+        .section {
+          font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+          text-transform: uppercase; color: var(--secondary-text-color, #888);
+          padding: 16px 0 5px;
+          border-bottom: 1px solid var(--divider-color, #e0e0e0);
+          margin-bottom: 8px;
+        }
+        .section:first-child { padding-top: 2px; }
+
+        /* ── grid row — label always 140px, inputs fill the rest ── */
+        .row {
+          display: grid;
+          grid-template-columns: 140px 1fr;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .row-label {
+          font-size: 0.76rem;
+          color: var(--secondary-text-color, #666);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .row-inputs {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+        }
+        /* hint sits under the row, indented to line up with inputs */
+        .hint {
+          font-size: 0.62rem;
+          color: var(--secondary-text-color, #999);
+          padding-left: 148px;
+          margin-top: -4px;
+          margin-bottom: 6px;
+          line-height: 1.4;
+        }
+
+        /* ── inputs ── */
+        input[type=text], input[type=number], select {
+          flex: 1;
+          min-width: 0;
+          width: 100%;
+          padding: 5px 7px;
+          border: 1px solid var(--divider-color, #ccc);
+          border-radius: 6px;
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color, #333);
+          font-size: 0.8rem;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary-color, #6200ea); }
+
+        /* number inputs in multi-input rows get a fixed width so they share evenly */
+        .row-inputs input[type=number] { width: 72px; flex: none; }
+        /* except lone number inputs — let those stretch */
+        .row-inputs.single input[type=number] { width: 100%; flex: 1; }
+
+        input[type=range] {
+          flex: 1; min-width: 0;
+          accent-color: var(--primary-color, #6200ea);
+        }
+        .range-val {
+          font-size: 0.76rem; font-weight: 600;
+          min-width: 34px; text-align: right;
+          flex-shrink: 0;
+          color: var(--primary-text-color, #333);
+        }
+
+        /* ── color swatch + text ── */
+        .color-wrap { display: flex; align-items: center; gap: 6px; width: 100%; }
+        input[type=color] {
+          width: 34px; height: 28px;
+          border: 1px solid var(--divider-color, #ccc); border-radius: 5px;
+          padding: 1px 2px; cursor: pointer; flex-shrink: 0;
+        }
+        .color-wrap input[type=text] { flex: 1; }
+
+        /* ── toggle (checkbox) ── */
+        .toggle {
+          display: flex; align-items: center; gap: 8px;
+          margin-bottom: 7px;
+        }
+        .toggle input[type=checkbox] {
+          width: 15px; height: 15px; flex-shrink: 0;
+          accent-color: var(--primary-color, #6200ea); cursor: pointer;
+        }
+        .toggle label { font-size: 0.76rem; cursor: pointer; flex: 1; }
+
+        /* ── secondary label inside row-inputs (e.g. "Max", "radius") ── */
+        .lbl {
+          font-size: 0.7rem; color: var(--secondary-text-color, #888);
+          white-space: nowrap; flex-shrink: 0;
+        }
+
+        /* ── collapsible details ── */
+        details { margin-bottom: 0; }
+        details > summary {
+          font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+          text-transform: uppercase; color: var(--secondary-text-color, #888);
+          padding: 14px 0 5px; cursor: pointer;
+          border-bottom: 1px solid var(--divider-color, #e0e0e0);
+          margin-bottom: 8px; list-style: none;
+          display: flex; align-items: center; gap: 6px;
+        }
+        details > summary::before { content: "▶"; font-size: 0.55rem; transition: transform 0.2s; }
+        details[open] > summary::before { transform: rotate(90deg); }
+      </style>
+
+      <div class="editor">
+
+        <!-- ══ ENTITY ══ -->
+        <div class="section">Entity</div>
+        ${row("Entity *",        txt("entity",    this._v("entity"),    "light.living_room"))}
+        ${row("Attribute",       txt("attribute", this._v("attribute"), "brightness (optional)"))}
+        ${row("Service",         txt("service",   this._v("service"),   "light.turn_on (optional)"))}
+        ${row("Service data key",txt("service_data_key", this._v("service_data_key"), "brightness_pct"))}
+        <div class="row">
+          <span class="row-label">Min / Max / Step</span>
+          <div class="row-inputs">
+            ${num("min",  this._v("min",  0),   {step:"any"})}
+            ${num("max",  this._v("max",  100), {step:"any"})}
+            ${num("step", this._v("step", 1),   {step:"any", min:"0.01"})}
+          </div>
+        </div>
+
+        <!-- ══ LAYOUT ══ -->
+        <div class="section">Layout</div>
+        ${row("Orientation", sel("orientation",
+          [["vertical","Vertical"],["horizontal","Horizontal"]],
+          c.orientation||"vertical"))}
+        ${row("Track length",    `<div class="row-inputs single">${num("track_length", this._v("track_length", isH?"":280), {min:"40", placeholder: isH?"fills width":"280"})}</div>`)}
+        <div class="row">
+          <span class="row-label">Track thickness / radius</span>
+          <div class="row-inputs">
+            ${num("track_thickness", this._v("track_thickness",6), {min:"1",max:"40"})}
+            ${num("track_radius",    this._v("track_radius",3),    {min:"0",max:"40"})}
+          </div>
+        </div>
+
+        <!-- ══ LABELS ══ -->
+        <div class="section">Labels &amp; Visibility</div>
+        ${row("Label main",  txt("label_main",  this._v("label_main"),  "(none — primary title)"))}
+        ${row("Label minor", txt("label_minor", this._v("label_minor"), "(optional subtitle)"))}
+        ${row("Label position", sel("label_position",
+          [["start","Start (top / left)"],["end","End (bottom / right)"]],
+          c.label_position||"start"),
+          "start = before the slider · end = after the slider")}
+        ${row("Icon",       txt("icon", this._v("icon"), "mdi:brightness-6"))}
+        ${row("Unit",       txt("unit", this._v("unit"), "%"))}
+        <div class="row">
+          <span class="row-label">Range labels</span>
+          <div class="row-inputs">
+            ${txt("label_min", this._v("label_min"), "min label")}
+            ${txt("label_max", this._v("label_max"), "max label")}
+          </div>
+        </div>
+        ${toggle("show_value",       "Show live value",          this._v("show_value",true)!==false)}
+        ${toggle("show_range",       "Show min/max range labels",this._v("show_range",true)!==false)}
+        ${toggle("show_border",      "Show card border/shadow",  this._v("show_border",true)!==false)}
+        ${toggle("show_icon_border", "Show icon box border",     this._v("show_icon_border",true)!==false)}
+        ${toggle("use_theme_colors", "Use theme colors",         this._v("use_theme_colors",false)===true)}
+        ${toggle("display_only",     "Display only (no slider)", this._v("display_only",false)===true)}
+
+        <!-- ══ FILL ══ -->
+        <div class="section">Fill</div>
+        ${row("Fill mode", sel("fill_mode",
+          [["solid","Solid"],["none","None (empty)"],["gradient","Gradient"]],
+          c.fill_mode||"solid"))}
+        ${(c.fill_mode||"solid")==="gradient" ? `
+        ${colorRow("fill_color_start","Gradient start","#56d3f5")}
+        ${colorRow("fill_color_end",  "Gradient end",  "#e0c97f")}` : ""}
+        ${row("Fill opacity", range("fill_opacity", this._v("fill_opacity",0.72), 0, 1, 0.01))}
+
+        <!-- ══ COLORS ══ -->
+        <div class="section">Colors</div>
+        ${colorRow("color",            "Accent / fill",    "#e0c97f")}
+        ${colorRow("background_color", "Background",       "#e0e5ec")}
+        ${colorRow("text_color",       "Value text",       "#3d4f6b")}
+        ${colorRow("label_color",      "Labels",           "#8a9bb2")}
+        ${colorRow("icon_color",       "Icon color",       "")}
+
+        <!-- ══ GLOW ══ -->
+        <div class="section">Glow</div>
+        ${toggle("glow", "Enable glow", this._v("glow",true)!==false)}
+        ${row("Intensity (0–1)",
+          range("glow_intensity", this._v("glow_intensity",0.55), 0, 1, 0.05),
+          "Convenience scalar — sets size + opacity together. 0=off · 0.6=normal · 1=blazing")}
+        ${row("Size (px)",    `<div class="row-inputs single">${num("glow_size",    this._v("glow_size",18),    {min:"0",max:"60"})}</div>`,
+          "Raw spread radius — overridden when Intensity is set")}
+        ${row("Opacity",      `<div class="row-inputs single">${num("glow_opacity", this._v("glow_opacity",0.55),{min:"0",max:"1",step:"0.01"})}</div>`,
+          "Raw alpha — overridden when Intensity is set")}
+
+        <!-- ══ ICON ANIMATION ══ -->
+        <div class="section">Icon Animation</div>
+        ${row("Animation", sel("icon_animation",
+          [["none","None"],["spin","Spin"],["pulse","Pulse"],["bounce","Bounce"],
+           ["shake","Shake"],["ping","Ping"],["blink","Blink"]],
+          c.icon_animation||"none"),
+          "Speed is proportional to slider value — paused at min, fastest at max")}
+        <div class="row">
+          <span class="row-label">Speed min / max (s)</span>
+          <div class="row-inputs">
+            ${num("icon_animation_speed_min", this._v("icon_animation_speed_min",3.0), {min:"0.1",max:"20",step:"0.1"})}
+            ${num("icon_animation_speed_max", this._v("icon_animation_speed_max",0.2), {min:"0.05",max:"10",step:"0.05"})}
+          </div>
+        </div>
+
+        <!-- ══ THUMB ══ -->
+        <div class="section">Thumb</div>
+        ${row("Shape", sel("thumb_shape",
+          [["round","Round (pill)"],["squircle","Squircle"],["square","Square"]],
+          c.thumb_shape||"round"))}
+        ${row("Thickness (across)",
+          `<div class="row-inputs single">${num("thumb_thickness", this._v("thumb_thickness", isH?24:46), {min:"4",max:"200"})}</div>`,
+          isH ? "↕ controls CSS height (across the track)" : "← controls CSS width (across the track) →")}
+        ${row("Length (along)",
+          `<div class="row-inputs single">${num("thumb_length", this._v("thumb_length", isH?46:24), {min:"4",max:"200"})}</div>`,
+          isH ? "← controls CSS width (along the track) →" : "↕ controls CSS height (along the track)")}
+        ${row("Shadow size",
+          `<div class="row-inputs single">${num("thumb_shadow_size", this._v("thumb_shadow_size",5), {min:"0",max:"20"})}</div>`)}
+
+        <!-- ══ ADVANCED (collapsible) ══ -->
+        <details>
+          <summary>Advanced sizing, typography &amp; overrides</summary>
+
+          <div class="section" style="padding-top:8px">Card Shell</div>
+          <div class="row">
+            <span class="row-label">Radius / Shadow</span>
+            <div class="row-inputs">
+              ${num("card_radius",      this._v("card_radius",22),     {min:"0",max:"60"})}
+              ${num("card_shadow_size", this._v("card_shadow_size",7),  {min:"0",max:"30"})}
+            </div>
+          </div>
+          ${row("Padding", txt("card_padding", this._v("card_padding", isH?"20px 24px 18px":"24px 20px 20px")))}
+
+          <div class="section">Icon Box</div>
+          <div class="row">
+            <span class="row-label">Size / Box radius / Glyph</span>
+            <div class="row-inputs">
+              ${num("icon_size",       this._v("icon_size",       isH?38:46), {min:"20",max:"100"})}
+              ${num("icon_box_radius", this._v("icon_box_radius", isH?11:13), {min:"0", max:"50"})}
+              ${num("icon_mdi_size",   this._v("icon_mdi_size",   isH?20:22), {min:"10",max:"60"})}
+            </div>
+          </div>
+
+          <div class="section">Spacing</div>
+          <div class="row">
+            <span class="row-label">Header gap / margin</span>
+            <div class="row-inputs">
+              ${num("header_gap",    this._v("header_gap",    isH?10:6),  {min:"0",max:"40"})}
+              ${num("header_margin", this._v("header_margin", isH?16:18), {min:"0",max:"80"})}
+            </div>
+          </div>
+          ${row("Footer margin",
+            `<div class="row-inputs single">${num("footer_margin", this._v("footer_margin", isH?10:14), {min:"0",max:"60"})}</div>`)}
+
+          <div class="section">Typography</div>
+          <div class="row">
+            <span class="row-label">Font name / value / range</span>
+            <div class="row-inputs">
+              ${txt("font_name",  this._v("font_name",  "0.76rem"))}
+              ${txt("font_value", this._v("font_value", "1.05rem"))}
+              ${txt("font_range", this._v("font_range", "0.68rem"))}
+            </div>
+          </div>
+          ${row("Font minor label", txt("font_minor", this._v("font_minor", "0.65rem")),
+            "Font size for the minor/subtitle label")}
+          ${row("Font display value", txt("font_display", this._v("font_display", "2.4rem")),
+            "Font size for the large value in display_only mode")}
+
+          <div class="section">Grip Lines</div>
+          <div class="row">
+            <span class="row-label">Lines / width / height / gap</span>
+            <div class="row-inputs">
+              ${num("grip_lines",  this._v("grip_lines",  3),   {min:"0",max:"10"})}
+              ${num("grip_width",  this._v("grip_width",  isH?12:18), {min:"1",max:"60"})}
+              ${num("grip_height", this._v("grip_height", 2),   {min:"1",max:"10"})}
+              ${num("grip_gap",    this._v("grip_gap",    3.5), {min:"0",max:"20",step:"0.5"})}
+            </div>
+          </div>
+
+          <div class="section">Shadows</div>
+          ${row("Shadow dark",  txt("shadow_dark",  this._v("shadow_dark",  "rgba(163,177,198,0.6)")))}
+          ${row("Shadow light", txt("shadow_light", this._v("shadow_light", "rgba(255,255,255,0.9)")))}
+
+          <div class="section">Thumb Low-level Overrides</div>
+          <div class="row">
+            <span class="row-label">Explicit radius</span>
+            <div class="row-inputs single">
+              ${num("thumb_radius", this._v("thumb_radius",""), {min:"0",max:"100",placeholder:"auto from shape"})}
+            </div>
+          </div>
+          <div class="hint">Explicit CSS border-radius — overrides thumb_shape preset</div>
+          <div class="row">
+            <span class="row-label">CSS width / height</span>
+            <div class="row-inputs">
+              ${num("thumb_width",  this._v("thumb_width",""),  {min:"4",max:"300",placeholder:"auto"})}
+              ${num("thumb_height", this._v("thumb_height",""), {min:"4",max:"300",placeholder:"auto"})}
+            </div>
+          </div>
+          <div class="hint">Bypass axis mapping entirely — use only when axis names are insufficient</div>
+
+        </details>
+      </div>
+    `;
+
+    this._attachEditorEvents();
+  }
+
+  _esc(v) {
+    return (v ?? "").toString().replace(/"/g, "&quot;");
+  }
+
+  _attachEditorEvents() {
+    const root = this.shadowRoot;
+
+    /* ── text / number inputs ── */
+    const textIds = [
+      "entity","attribute","service","service_data_key",
+      "label_main","label_minor","icon","unit","label_min","label_max",
+      "min","max","step",
+      "track_length","track_thickness","track_radius",
+      "thumb_thickness","thumb_length","thumb_shadow_size",
+      "thumb_radius","thumb_width","thumb_height",
+      "card_radius","card_shadow_size","card_padding",
+      "icon_size","icon_box_radius","icon_mdi_size",
+      "header_gap","header_margin","footer_margin",
+      "font_name","font_value","font_range","font_minor","font_display",
+      "grip_lines","grip_width","grip_height","grip_gap",
+      "shadow_dark","shadow_light",
+      "glow_size","glow_opacity",
+      "icon_animation_speed_min","icon_animation_speed_max",
+    ];
+    textIds.forEach(id => {
+      const el = root.getElementById(id);
+      if (!el) return;
+      const handler = () => {
+        let val = el.value.trim();
+        if (el.type === "number") {
+          val = val === "" ? undefined : parseFloat(val);
+        } else if (val === "") {
+          val = undefined;
+        }
+        this._set(id, val);
+      };
+      el.addEventListener("change", handler);
+      el.addEventListener("keydown", e => { if (e.key === "Enter") handler(); });
+    });
+
+    /* ── select dropdowns ── */
+    ["orientation","fill_mode","thumb_shape","icon_animation","label_position"].forEach(id => {
+      const el = root.getElementById(id);
+      if (!el) return;
+      el.addEventListener("change", () => this._set(id, el.value));
+    });
+
+    /* ── checkboxes ── */
+    ["glow","show_value","show_range","show_border","show_icon_border","use_theme_colors","display_only"].forEach(id => {
+      const el = root.getElementById(id);
+      if (!el) return;
+      el.addEventListener("change", () => this._set(id, el.checked));
+    });
+
+    /* ── range sliders ── */
+    [
+      ["fill_opacity",   "fill_opacity",   2],
+      ["glow_intensity", "glow_intensity", 2],
+    ].forEach(([id, key, dec]) => {
+      const el  = root.getElementById(id);
+      const out = root.getElementById(id + "_val");
+      if (!el) return;
+      el.addEventListener("input", () => {
+        const v = parseFloat(el.value);
+        if (out) out.textContent = v.toFixed(dec);
+        this._set(key, v);
+      });
+    });
+
+    /* ── color pickers — swatch ID is now "<key>_swatch", text is "<key>" ── */
+    [
+      "color","background_color","text_color","label_color","icon_color",
+      "fill_color_start","fill_color_end",
+    ].forEach(key => {
+      const swatch = root.getElementById(key + "_swatch");
+      const txt    = root.getElementById(key);
+      if (swatch) {
+        swatch.addEventListener("input", () => {
+          if (txt) txt.value = swatch.value;
+          this._set(key, swatch.value);
+        });
+      }
+      if (txt) {
+        txt.addEventListener("change", () => {
+          const v = txt.value.trim();
+          if (v && swatch) swatch.value = v;
+          this._set(key, v || undefined);
+        });
+      }
+    });
+  }
+}
+
+customElements.define("neumorphic-slider-card-editor", NeumorphicSliderCardEditor);
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type:             "neumorphic-slider-card",
+  name:             "Neumorphic Slider Card",
+  description:      "Vertical / horizontal neumorphic slider — parametric sizing, glow, gradient fill, icon animation.",
+  preview:          true,
+  documentationURL: "https://github.com/",
+});
+
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+ * neumorphic-rotary-slider.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+"use strict";
+/**
+ * Neumorphic Rotary Slider Card  v2.0
+ * ──────────────────────────────────
+ * A circular knob-style card for Home Assistant.
+ * Compatible with the Neumorphic theme (etnlbck/hacs-neumorphic-template).
+ *
+ * Every text label is independently optional and fully typographically
+ * configurable via a LabelConfig sub-object.
+ *
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  FULL CONFIG REFERENCE                                      │
+ * │                                                             │
+ * │  type: custom:neumorphic-rotary-slider                      │
+ * │  entity: input_number.living_room_temp                      │
+ * │  attribute: ~            # optional HA attribute override   │
+ * │  min: 16                 # range minimum (default 0)        │
+ * │  max: 28                 # range maximum (default 100)      │
+ * │  step: 0.5               # snap step    (default 1)         │
+ * │  unit: "°C"              # appended to value display        │
+ * │  service: input_number.set_value                            │
+ * │  service_data_key: value                                    │
+ * │  scale: 1                # multiply before calling service  │
+ * │                                                             │
+ * │  # Each label block is OPTIONAL.                            │
+ * │  # Omit the block entirely to hide the label.               │
+ * │  # All sub-keys within a block are also optional.           │
+ * │                                                             │
+ * │  title_label:            # top heading                      │
+ * │    text: Temperature     # override display text            │
+ * │    show: true            # false hides it  (default true)   │
+ * │    font: sans-serif      # CSS font-family                  │
+ * │    size: 13px            # CSS font-size                    │
+ * │    color: "#888888"      # CSS color                        │
+ * │    weight: 400           # CSS font-weight                  │
+ * │    transform: uppercase  # CSS text-transform               │
+ * │    spacing: 0.08em       # CSS letter-spacing               │
+ * │                                                             │
+ * │  value_label:            # current value, centre-bottom     │
+ * │    show: true                                               │
+ * │    font: ~               # inherits primary font            │
+ * │    size: 22px                                               │
+ * │    color: ~              # inherits --primary-text-color    │
+ * │    weight: 500                                              │
+ * │                                                             │
+ * │  min_label:              # bottom-left                      │
+ * │    show: true                                               │
+ * │    text: "Low"           # override; default = numeric min  │
+ * │    size: 11px                                               │
+ * │    color: ~                                                 │
+ * │                                                             │
+ * │  max_label:              # bottom-right                     │
+ * │    show: true                                               │
+ * │    text: "High"          # override; default = numeric max  │
+ * │    size: 11px                                               │
+ * │    color: ~                                                 │
+ * └─────────────────────────────────────────────────────────────┘
+ */
+var _a;
+var _b;
+// ── Palettes ──────────────────────────────────────────────────────────────────
+const DARK_PALETTE = {
+    bg: "#23272e",
+    shadowDark: "#181a1f",
+    shadowLight: "#2c3140",
+    track: "#1a1d23",
+    accent1: "#2196f3",
+    accent2: "#32d48e",
+    handleBg: "#2a2f3a",
+    handleDot: "#32d48e",
+    innerBorder: "rgba(44,49,64,0.7)",
+    textMuted: "#888888",
+    textPrimary: "#e0e0e0",
+    glow: "#2196f3", // blue glow behind handle in dark mode
+};
+const LIGHT_PALETTE = {
+    bg: "#e0e0e0",
+    shadowDark: "#bebebe",
+    shadowLight: "#ffffff",
+    track: "#c8c8c8",
+    accent1: "#a3b1c6",
+    accent2: "#7b8fa8",
+    handleBg: "#d6d6d6",
+    handleDot: "#a3b1c6",
+    innerBorder: "rgba(180,180,180,0.5)",
+    textMuted: "#888888",
+    textPrimary: "#333333",
+    glow: "#a3b1c6", // soft blue-grey glow in light mode
+};
+// ── Dark-mode detection ───────────────────────────────────────────────────────
+function resolveIsDark(hass) {
+    var _a, _b, _c, _d;
+    if (((_a = hass === null || hass === void 0 ? void 0 : hass.themes) === null || _a === void 0 ? void 0 : _a.darkMode) === true)
+        return true;
+    if (((_b = hass === null || hass === void 0 ? void 0 : hass.themes) === null || _b === void 0 ? void 0 : _b.darkMode) === false)
+        return false;
+    if (document.documentElement.classList.contains("dark"))
+        return true;
+    if (document.documentElement.classList.contains("light"))
+        return false;
+    const cssVar = getComputedStyle(document.documentElement)
+        .getPropertyValue("--primary-background-color").trim();
+    if (cssVar) {
+        const lum = hexLuminance(cssVar);
+        if (lum !== null)
+            return lum < 0.4;
+    }
+    return (_d = (_c = window.matchMedia) === null || _c === void 0 ? void 0 : _c.call(window, "(prefers-color-scheme: dark)").matches) !== null && _d !== void 0 ? _d : true;
+}
+function hexLuminance(hex) {
+    const clean = hex.replace("#", "").trim();
+    let r, g, b;
+    if (clean.length === 3) {
+        r = parseInt(clean[0] + clean[0], 16);
+        g = parseInt(clean[1] + clean[1], 16);
+        b = parseInt(clean[2] + clean[2], 16);
+    }
+    else if (clean.length === 6) {
+        r = parseInt(clean.slice(0, 2), 16);
+        g = parseInt(clean.slice(2, 4), 16);
+        b = parseInt(clean.slice(4, 6), 16);
+    }
+    else {
+        return null;
+    }
+    if (isNaN(r) || isNaN(g) || isNaN(b))
+        return null;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+/** Convert a hex colour + alpha [0..1] to a CSS rgba() string. */
+function hexAlpha(hex, alpha) {
+    const clean = hex.replace("#", "").trim();
+    let r, g, b;
+    if (clean.length === 3) {
+        r = parseInt(clean[0] + clean[0], 16);
+        g = parseInt(clean[1] + clean[1], 16);
+        b = parseInt(clean[2] + clean[2], 16);
+    }
+    else {
+        r = parseInt(clean.slice(0, 2), 16);
+        g = parseInt(clean.slice(2, 4), 16);
+        b = parseInt(clean.slice(4, 6), 16);
+    }
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+/**
+ * Linearly interpolate between two hex colours.
+ * t = 0 returns colorA, t = 1 returns colorB.
+ * Used to colour each dial tick according to its position along the arc.
+ */
+function hexLerp(colorA, colorB, t) {
+    function parse(hex) {
+        const c = hex.replace("#", "").trim();
+        if (c.length === 3)
+            return [
+                parseInt(c[0] + c[0], 16),
+                parseInt(c[1] + c[1], 16),
+                parseInt(c[2] + c[2], 16),
+            ];
+        return [
+            parseInt(c.slice(0, 2), 16),
+            parseInt(c.slice(2, 4), 16),
+            parseInt(c.slice(4, 6), 16),
+        ];
+    }
+    const [r1, g1, b1] = parse(colorA);
+    const [r2, g2, b2] = parse(colorB);
+    const r = Math.round(r1 + (r2 - r1) * t);
+    const g = Math.round(g1 + (g2 - g1) * t);
+    const b = Math.round(b1 + (b2 - b1) * t);
+    return `rgb(${r},${g},${b})`;
+}
+// ── Label helpers ─────────────────────────────────────────────────────────────
+/** Returns false only when the user explicitly wrote `show: false`. */
+function labelVisible(cfg) {
+    if (cfg === undefined)
+        return true; // block present but no show key → visible
+    return cfg.show !== false;
+}
+/**
+ * Apply a LabelConfig's typography overrides to a DOM element.
+ * Only properties explicitly set in the config are written; everything
+ * else falls back to the CSS class defaults already on the element.
+ */
+function applyTypography(el, cfg) {
+    if (!cfg)
+        return;
+    // Use != null (not truthiness) so "0px", weight:0, empty-reset all work correctly
+    if (cfg.font != null)
+        el.style.fontFamily = cfg.font;
+    if (cfg.size != null)
+        el.style.fontSize = cfg.size;
+    if (cfg.color != null)
+        el.style.color = cfg.color;
+    if (cfg.weight != null)
+        el.style.fontWeight = String(cfg.weight);
+    if (cfg.transform != null)
+        el.style.textTransform = cfg.transform;
+    if (cfg.spacing != null)
+        el.style.letterSpacing = cfg.spacing;
+}
+// ── Card ──────────────────────────────────────────────────────────────────────
+class NeumorphicRotarySliderCard extends HTMLElement {
+    constructor() {
+        super(...arguments);
+        this._hass = null;
+        this._config = null;
+        this._canvas = null;
+        this._isDark = true;
+        this._value = 0;
+        this._dragging = false;
+        this._rafPending = false;
+        // _commitTimer removed — service call fires synchronously on pointer release
+        /**
+         * The scaled value we most recently sent to HA (i.e. what callService used).
+         * null means no pending command.
+         *
+         * _syncFromEntity compares every incoming HA state against this value:
+         *   - If it matches → Alexa confirmed our command → accept it, clear pending.
+         *   - If it differs → stale update (old value still echoing back) → ignore it.
+         *
+         * This is robust regardless of cloud round-trip time: we never rely on a
+         * fixed timeout, we simply wait until HA reports exactly what we asked for.
+         */
+        this._pendingScaled = null;
+        this._themeObserver = null;
+        // ── Pointer events ────────────────────────────────────────────────────────
+        this._onPointerDown = (e) => {
+            var _a;
+            if ((_a = this._config) === null || _a === void 0 ? void 0 : _a.display_only)
+                return;
+            if (!this._isOnHandle(e))
+                return;
+            this._dragging = true;
+            this._canvas.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        };
+        this._onPointerMove = (e) => {
+            if (!this._dragging)
+                return;
+            this._value = this._valueFromPointer(e);
+            this._scheduleDraw();
+            e.preventDefault();
+        };
+        this._onPointerUp = (_e) => {
+            if (!this._dragging)
+                return;
+            this._dragging = false;
+            // 1. Snap _value to step and compute the exact scaled value we will send.
+            //    Do this synchronously so _pendingScaled is set BEFORE any HA state
+            //    update can arrive — no race condition regardless of how fast the user
+            //    releases or how quickly Alexa echoes back the old state.
+            if (!this._config)
+                return;
+            const { min = 0, max = 100, step = 1, scale = 1 } = this._config;
+            let raw = min + this._value * (max - min);
+            raw = Math.round(raw / step) * step;
+            this._value = (raw - min) / (max - min);
+            this._pendingScaled = parseFloat((raw * scale).toFixed(6));
+            // 2. Redraw immediately at the snapped position.
+            this._scheduleDraw();
+            // 3. Fire the service call — no debounce needed since pointerup/cancel are
+            //    on window and can only fire once per gesture.
+            this._commitValue();
+        };
+    }
+    // ── Geometry — all derived from card_size ──────────────────────────────────
+    //
+    // card_size  = CSS diameter display diameter of the canvas element (default 220px).
+    // W (bitmap) = card_size + 40px bleed margin so the glow can extend outside
+    //              the disc without hitting the bitmap edge.
+    // All other dimensions scale linearly with card_size so the card looks
+    // identical regardless of size — just bigger or smaller.
+    //
+    // ── Angle helpers ─────────────────────────────────────────────────────────
+    //
+    // User space  : 0° = bottom (6 o'clock), clockwise positive.
+    // Canvas space: 0° = right  (3 o'clock), clockwise positive (y-axis down).
+    //
+    // Conversion: canvas_rad = user_deg * (π/180) + π/2
+    //   because canvas 0° is 90° ahead of user 0° (bottom).
+    //
+    // Verified:  user 45°  → canvas π*0.75 = current START_ANG  ✓
+    //            user 315° → canvas π*2.25 = current END_ANG    ✓
+    _degToRad(userDeg) {
+        return userDeg * Math.PI / 180 + Math.PI / 2;
+    }
+    /** Canvas start angle for the MIN position. */
+    get START_ANG() {
+        var _a, _b, _c, _d;
+        const zero = (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.zero_angle) !== null && _b !== void 0 ? _b : 0;
+        const min = (_d = (_c = this._config) === null || _c === void 0 ? void 0 : _c.min_angle) !== null && _d !== void 0 ? _d : 45;
+        return this._degToRad(zero + min);
+    }
+    /** Canvas end angle for the MAX position. Always > START_ANG (clockwise). */
+    get END_ANG() {
+        var _a, _b, _c, _d, _f, _g;
+        const zero = (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.zero_angle) !== null && _b !== void 0 ? _b : 0;
+        const minDeg = (_d = (_c = this._config) === null || _c === void 0 ? void 0 : _c.min_angle) !== null && _d !== void 0 ? _d : 45;
+        let maxDeg = (_g = (_f = this._config) === null || _f === void 0 ? void 0 : _f.max_angle) !== null && _g !== void 0 ? _g : 315;
+        // Ensure the arc goes clockwise: if max ≤ min, wrap max by adding 360°
+        if (maxDeg <= minDeg)
+            maxDeg += 360;
+        return this._degToRad(zero + maxDeg);
+    }
+    /** Card size: CSS display diameter in px. Clamped 100–400. */
+    get KS() { var _a, _b; return Math.max(100, Math.min(400, (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.card_size) !== null && _b !== void 0 ? _b : 220)); }
+    /** Canvas bitmap side length = display size + 40px bleed margin. */
+    get W() { return this.KS + 40; }
+    /** Canvas centre coordinates. */
+    get CX() { return this.W / 2; }
+    get CY() { return this.W / 2; }
+    /** Disc radius scales with card_size; user override clamped within safe range. */
+    get DISC_R() {
+        var _a, _b;
+        const def = Math.round(this.KS * 0.432); // 95/220 ≈ 0.432
+        return Math.max(40, Math.min(this.KS * 0.52, (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.disc_radius) !== null && _b !== void 0 ? _b : def));
+    }
+    /** Handle radius scales with card_size; user override clamped. */
+    get HANDLE_R() {
+        var _a, _b;
+        const def = Math.round(this.KS * 0.10); // 22/220 ≈ 0.10
+        return Math.max(6, Math.min(this.KS * 0.18, (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.handle_radius) !== null && _b !== void 0 ? _b : def));
+    }
+    /** Glow intensity 0–1, default 0.65. */
+    get GLOW_INT() { var _a, _b; return Math.max(0, Math.min(1, (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.glow_intensity) !== null && _b !== void 0 ? _b : 0.65)); }
+    /** Scale factor relative to the default 220px design. Used to scale fixed px values. */
+    get SCALE() { return this.KS / 220; }
+    // Keep OUTER_R / INNER_R as aliases so nothing else breaks
+    get OUTER_R() { return this.DISC_R; }
+    get INNER_R() { return this.DISC_R; }
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
+    connectedCallback() {
+        this._build();
+        this._applyLabelConfig(); // config arrived before DOM — apply now
+        this._attachEvents();
+        this._watchTheme();
+        this._isDark = resolveIsDark(this._hass);
+        this._scheduleDraw();
+    }
+    disconnectedCallback() {
+        var _a;
+        this._detachEvents();
+        (_a = this._themeObserver) === null || _a === void 0 ? void 0 : _a.disconnect();
+        this._themeObserver = null;
+    }
+    // ── HA interface ───────────────────────────────────────────────────────────
+    setConfig(config) {
+        if (!config.entity)
+            throw new Error("neumorphic-rotary-slider: 'entity' is required");
+        this._config = Object.assign({ min: 0, max: 100, step: 1, unit: "", service_data_key: "value", scale: 1 }, config);
+        // Re-apply style (sizes may have changed) and label config
+        if (this.shadowRoot) {
+            this._updateStyle();
+            // Sync canvas element size in case card_size changed
+            if (this._canvas) {
+                this._canvas.width = this.W;
+                this._canvas.height = this.W;
+                this._canvas.style.width = this.KS + "px";
+                this._canvas.style.height = this.KS + "px";
+            }
+            // Sync center overlay size
+            const cw = this.shadowRoot.getElementById("value-center-wrap");
+            if (cw) {
+                cw.style.width = this.KS + "px";
+                cw.style.height = this.KS + "px";
+            }
+            this._applyLabelConfig();
+        }
+    }
+    set hass(hass) {
+        this._hass = hass;
+        this._isDark = resolveIsDark(hass);
+        this._syncFromEntity();
+        this._scheduleDraw();
+    }
+    // ── DOM build ─────────────────────────────────────────────────────────────
+    //
+    // Structure (inside shadow root):
+    //
+    //  ha-card
+    //  ├── div.title#title-label       ← major label (top heading)
+    //  ├── div.minor-label#minor-label  ← minor label (subtitle)
+    //  └── div.knob-wrap
+    //      ├── canvas
+    //      ├── div.value-center#value-center-wrap  ← value overlay on disc
+    //      │   └── span#value-center-display
+    //      ├── div.range-row
+    //      │   ├── span#min-display        ← min caption (static)
+    //      │   ├── span#min-value-display  ← min numeric value
+    //      │   ├── span#max-value-display  ← max numeric value
+    //      │   └── span#max-display        ← max caption (static)
+    //      ├── div.value-wrap
+    //      │   └── span#value-display      ← current value (below)
+    // ── Dynamic stylesheet ───────────────────────────────────────────────────
+    // Called from _build (initial) and from setConfig (when card_size changes).
+    // All px values derive from KS (card_size) via SCALE factor so the widget
+    // looks identical at any size.
+    _updateStyle(styleEl) {
+        var _a, _b, _c, _d, _f, _g;
+        const el = styleEl !== null && styleEl !== void 0 ? styleEl : (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.getElementById("neu-style");
+        if (!el)
+            return;
+        const ks = this.KS;
+        const sc = this.SCALE;
+        const p28 = Math.round(28 * sc);
+        const p20 = Math.round(20 * sc);
+        const pb = Math.round(56 * sc);
+        const mb24 = Math.round(24 * sc);
+        const fs13 = (13 * sc).toFixed(1);
+        const fs11 = (11 * sc).toFixed(1);
+        const fs22 = (22 * sc).toFixed(1);
+        const fs32 = (32 * sc).toFixed(1);
+        const mt4 = Math.round(4 * sc);
+        const mt8 = Math.round(8 * sc);
+        const rh = Math.round(18 * sc);
+        el.textContent = `
+      :host { display: block; }
+
+      ha-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: ${p28}px ${p20}px ${p20}px;
+        box-sizing: border-box;
+        background:    ${((_b = this._config) === null || _b === void 0 ? void 0 : _b.no_border) ? 'transparent' : 'var(--ha-card-background, var(--card-background-color, #23272e))'};
+        border-radius: ${((_c = this._config) === null || _c === void 0 ? void 0 : _c.no_border) ? '0' : 'var(--ha-card-border-radius, 18px)'};
+        box-shadow:    ${((_d = this._config) === null || _d === void 0 ? void 0 : _d.no_border) ? 'none' : 'var(--ha-card-box-shadow, 8px 8px 18px #181a1f, -8px -8px 18px #2c3140)'};
+      }
+
+      .title {
+        font-family:    var(--primary-font-family, sans-serif);
+        font-size:      ${fs13}px;
+        font-weight:    400;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color:          var(--text-medium-light-color, #888);
+        margin-bottom:  ${mb24}px;
+      }
+
+      .knob-wrap {
+        position:       relative;
+        width:          ${ks}px;
+        padding-bottom: ${pb}px;
+      }
+
+      canvas {
+        display:             block;
+        cursor:              ${((_f = this._config) === null || _f === void 0 ? void 0 : _f.display_only) ? 'default' : 'grab'};
+        touch-action:        none;
+        user-select:         none;
+        -webkit-user-select: none;
+      }
+      canvas:active { cursor: ${((_g = this._config) === null || _g === void 0 ? void 0 : _g.display_only) ? 'default' : 'grabbing'}; }
+      /* display_only: cursor:default already set above via template literal */
+
+      .range-row {
+        position:    relative;
+        height:      ${rh * 2}px;
+        margin-top:  ${mt8}px;
+        font-family: var(--primary-font-family, sans-serif);
+        font-size:   ${fs11}px;
+        color:       var(--text-medium-light-color, #666);
+      }
+      #min-display       { position: absolute; left:  ${mt8}px; top: 0; }
+      #max-display       { position: absolute; right: ${mt8}px; top: 0; }
+      #min-value-display { position: absolute; left:  ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #e0e0e0); }
+      #max-value-display { position: absolute; right: ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #e0e0e0); text-align: right; }
+
+      .value-wrap {
+        display:         flex;
+        justify-content: center;
+        margin-top:      ${mt4}px;
+      }
+      .value-wrap span {
+        font-family: var(--primary-font-family, sans-serif);
+        font-size:   ${fs22}px;
+        font-weight: 500;
+        color:       var(--primary-text-color, #e0e0e0);
+        white-space: nowrap;
+      }
+
+      .value-center {
+        position:        absolute;
+        top: 0; left: 0;
+        width:           ${ks}px;
+        height:          ${ks}px;
+        display:         flex;
+        align-items:     center;
+        justify-content: center;
+        pointer-events:  none;
+        flex-direction:  column;
+        gap:             ${Math.round(4 * sc)}px;
+      }
+      .value-center span {
+        font-family: var(--primary-font-family, sans-serif);
+        font-size:   ${fs32}px;
+        font-weight: 500;
+        color:       var(--primary-text-color, #e0e0e0);
+        white-space: nowrap;
+        text-align:  center;
+      }
+
+      /* ── minor label ── */
+      .minor-label {
+        font-family:    var(--primary-font-family, sans-serif);
+        font-size:      ${fs11}px;
+        font-weight:    400;
+        letter-spacing: 0.06em;
+        color:          var(--text-medium-light-color, #888);
+        margin-bottom:  ${Math.round(6 * sc)}px;
+        text-align:     center;
+      }
+
+
+    `;
+    }
+    _build() {
+        if (this.shadowRoot)
+            return;
+        const shadow = this.attachShadow({ mode: "open" });
+        // ── base stylesheet ────────────────────────────────────────────────────
+        const style = document.createElement("style");
+        style.id = "neu-style";
+        this._updateStyle(style);
+        // ── elements ──────────────────────────────────────────────────────────
+        const card = document.createElement("ha-card");
+        const titleEl = document.createElement("div");
+        const wrap = document.createElement("div");
+        const canvas = document.createElement("canvas");
+        const rangeRow = document.createElement("div");
+        const minSpan = document.createElement("span");
+        const maxSpan = document.createElement("span");
+        const valueWrap = document.createElement("div");
+        const valueSpan = document.createElement("span");
+        titleEl.className = "title";
+        titleEl.id = "title-label";
+        wrap.className = "knob-wrap";
+        canvas.width = this.W;
+        canvas.height = this.W;
+        canvas.style.width = this.KS + "px";
+        canvas.style.height = this.KS + "px";
+        rangeRow.className = "range-row";
+        minSpan.id = "min-display";
+        maxSpan.id = "max-display";
+        valueWrap.className = "value-wrap";
+        valueSpan.id = "value-display";
+        this._canvas = canvas;
+        // ── Minor label ──────────────────────────────────────────────────────────
+        const minorEl = document.createElement("div");
+        minorEl.className = "minor-label";
+        minorEl.id = "minor-label";
+        // ── Center-value overlay ─────────────────────────────────────────────────
+        const centerWrap = document.createElement("div");
+        const centerSpan = document.createElement("span");
+        centerWrap.className = "value-center";
+        centerWrap.id = "value-center-wrap";
+        centerSpan.id = "value-center-display";
+        centerWrap.appendChild(centerSpan);
+        // ── Icon row — lives OUTSIDE knob-wrap at ha-card level ─────────────────
+        const minValSpan = document.createElement("span");
+        const maxValSpan = document.createElement("span");
+        minValSpan.id = "min-value-display";
+        maxValSpan.id = "max-value-display";
+        // ── Below-row (for icon_position=below) ──────────────────────────────────
+        const belowRow = document.createElement("div");
+        belowRow.className = "below-row";
+        belowRow.id = "below-row";
+        rangeRow.appendChild(minSpan);
+        rangeRow.appendChild(minValSpan);
+        rangeRow.appendChild(maxValSpan);
+        rangeRow.appendChild(maxSpan);
+        valueWrap.appendChild(valueSpan);
+        wrap.appendChild(canvas);
+        wrap.appendChild(centerWrap);
+        wrap.appendChild(rangeRow);
+        wrap.appendChild(valueWrap);
+        card.appendChild(titleEl);
+        card.appendChild(minorEl);
+        card.appendChild(wrap);
+        shadow.appendChild(style);
+        shadow.appendChild(card);
+    }
+    // ── Label config application ───────────────────────────────────────────────
+    //
+    // Called after _build() whenever config changes.
+    // Sets visibility and applies any typography overrides.
+    _applyLabelConfig() {
+        var _a;
+        if (!this._config || !this.shadowRoot)
+            return;
+        const sr = this.shadowRoot;
+        const cfg = this._config;
+        const pos = (_a = cfg.value_position) !== null && _a !== void 0 ? _a : "below";
+        // ── Major title ────────────────────────────────────────────────────────
+        const titleEl = sr.getElementById("title-label");
+        if (titleEl) {
+            const vis = labelVisible(cfg.title_label);
+            titleEl.style.display = vis ? "" : "none";
+            if (vis)
+                applyTypography(titleEl, cfg.title_label);
+        }
+        // ── Minor label ───────────────────────────────────────────────────────
+        const minorEl = sr.getElementById("minor-label");
+        if (minorEl) {
+            const vis = labelVisible(cfg.minor_label);
+            minorEl.style.display = vis ? "" : "none";
+            if (vis)
+                applyTypography(minorEl, cfg.minor_label);
+        }
+        // ── Min / Max caption labels ──────────────────────────────────────────
+        for (const { id, labelCfg } of [
+            { id: "min-display", labelCfg: cfg.min_label },
+            { id: "max-display", labelCfg: cfg.max_label },
+        ]) {
+            const el = sr.getElementById(id);
+            if (!el)
+                continue;
+            const vis = labelVisible(labelCfg);
+            el.style.display = vis ? "" : "none";
+            if (vis)
+                applyTypography(el, labelCfg);
+        }
+        // ── Min / Max value displays ──────────────────────────────────────────
+        for (const { id, labelCfg } of [
+            { id: "min-value-display", labelCfg: cfg.min_value_label },
+            { id: "max-value-display", labelCfg: cfg.max_value_label },
+        ]) {
+            const el = sr.getElementById(id);
+            if (!el)
+                continue;
+            const vis = labelVisible(labelCfg);
+            el.style.display = vis ? "" : "none";
+            if (vis)
+                applyTypography(el, labelCfg);
+        }
+        // ── Range row: hide when ALL four are hidden ──────────────────────────
+        const rangeRow = sr.querySelector(".range-row");
+        if (rangeRow) {
+            const any = labelVisible(cfg.min_label) || labelVisible(cfg.max_label)
+                || labelVisible(cfg.min_value_label) || labelVisible(cfg.max_value_label);
+            rangeRow.style.display = any ? "" : "none";
+        }
+        // (display_only only affects _draw — no DOM class needed)
+        // ── Value display ────────────────────────────────────────────────────
+        const showValue = labelVisible(cfg.value_label);
+        const belowWrap = sr.querySelector(".value-wrap");
+        const belowSpan = sr.getElementById("value-display");
+        const centerWrap = sr.getElementById("value-center-wrap");
+        const centerSpan = sr.getElementById("value-center-display");
+        if (pos === "center") {
+            if (belowWrap)
+                belowWrap.style.display = "none";
+            if (centerWrap)
+                centerWrap.style.display = showValue ? "" : "none";
+            if (centerSpan && showValue)
+                applyTypography(centerSpan, cfg.value_label);
+        }
+        else {
+            if (centerWrap)
+                centerWrap.style.display = "none";
+            if (belowWrap)
+                belowWrap.style.display = showValue ? "" : "none";
+            if (belowSpan && showValue)
+                applyTypography(belowSpan, cfg.value_label);
+        }
+    }
+    // ── Theme watcher ─────────────────────────────────────────────────────────
+    _watchTheme() {
+        var _a;
+        this._themeObserver = new MutationObserver(() => {
+            const wasDark = this._isDark;
+            this._isDark = resolveIsDark(this._hass);
+            if (this._isDark !== wasDark)
+                this._scheduleDraw();
+        });
+        this._themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class", "style"],
+        });
+        (_a = window.matchMedia) === null || _a === void 0 ? void 0 : _a.call(window, "(prefers-color-scheme: dark)").addEventListener("change", () => {
+            this._isDark = resolveIsDark(this._hass);
+            this._scheduleDraw();
+        });
+    }
+    // ── Entity sync ───────────────────────────────────────────────────────────
+    _syncFromEntity() {
+        var _a, _b, _c, _d;
+        // Never update during a drag.
+        if (this._dragging)
+            return;
+        if (!this._hass || !this._config)
+            return;
+        const stateObj = this._hass.states[this._config.entity];
+        if (!stateObj)
+            return;
+        let raw;
+        if (this._config.attribute) {
+            raw = parseFloat(String((_a = stateObj.attributes[this._config.attribute]) !== null && _a !== void 0 ? _a : 0));
+        }
+        else {
+            raw = parseFloat(stateObj.state);
+        }
+        if (isNaN(raw))
+            return;
+        // If we have a pending command, compare the incoming HA value against it.
+        //
+        //  • HA value ≠ pending  →  this is a stale echo of the OLD state
+        //                            (Alexa hasn't processed our command yet).
+        //                            Ignore it — keep showing the optimistic value.
+        //
+        //  • HA value ≈ pending  →  Alexa confirmed our command.
+        //                            Accept it and clear the pending flag so future
+        //                            external changes (e.g. voice commands) come through.
+        //
+        // We use a small epsilon for floating-point comparison (HA may round).
+        if (this._pendingScaled !== null) {
+            const epsilon = 0.001;
+            if (Math.abs(raw - this._pendingScaled) > epsilon) {
+                return; // stale — ignore
+            }
+            this._pendingScaled = null; // confirmed — clear pending
+        }
+        const scale = (_b = this._config.scale) !== null && _b !== void 0 ? _b : 1;
+        const min = (_c = this._config.min) !== null && _c !== void 0 ? _c : 0;
+        const max = (_d = this._config.max) !== null && _d !== void 0 ? _d : 100;
+        const actual = raw / scale;
+        this._value = Math.max(0, Math.min(1, (actual - min) / (max - min)));
+    }
+    // ── Drawing ───────────────────────────────────────────────────────────────
+    _scheduleDraw() {
+        if (this._rafPending)
+            return;
+        this._rafPending = true;
+        requestAnimationFrame(() => {
+            this._rafPending = false;
+            this._draw();
+        });
+    }
+    _draw() {
+        var _a, _b;
+        if (!this._canvas || !this._config)
+            return;
+        const ctx = this._canvas.getContext("2d");
+        if (!ctx)
+            return;
+        const p = this._isDark ? DARK_PALETTE : LIGHT_PALETTE;
+        const glowColor = (_a = this._config.glow_color) !== null && _a !== void 0 ? _a : p.glow; // user override or palette default
+        const { W, CX, CY, DISC_R, HANDLE_R } = this;
+        // ── 1. Full clear ──────────────────────────────────────────────────────────
+        ctx.clearRect(0, 0, W, W);
+        const displayOnly = (_b = this._config.display_only) !== null && _b !== void 0 ? _b : false;
+        // ── 2 & 3. Handle position + Glow (skipped in display_only) ──────────────
+        if (!displayOnly) {
+            const hp = this._handlePos();
+            const clipR = W / 2;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(CX, CY, clipR, 0, Math.PI * 2);
+            ctx.clip();
+            const gi = this.GLOW_INT;
+            const grad = ctx.createRadialGradient(hp.x, hp.y, HANDLE_R * 0.2, hp.x, hp.y, clipR);
+            grad.addColorStop(0, hexAlpha(glowColor, gi * 1.00));
+            grad.addColorStop(0.08, hexAlpha(glowColor, gi * 0.69));
+            grad.addColorStop(0.20, hexAlpha(glowColor, gi * 0.34));
+            grad.addColorStop(0.38, hexAlpha(glowColor, gi * 0.15));
+            grad.addColorStop(0.55, hexAlpha(glowColor, gi * 0.06));
+            grad.addColorStop(0.72, hexAlpha(glowColor, gi * 0.015));
+            grad.addColorStop(1.0, hexAlpha(glowColor, 0));
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, W);
+            ctx.restore();
+        }
+        // ── 4. Under-disc range indicator ─────────────────────────────────────────
+        this._drawRangeUnder(ctx, p);
+        // ── 5. Under-disc endpoint markers ────────────────────────────────────────
+        this._drawMarkersUnder(ctx, p);
+        // ── 6. Single disc ────────────────────────────────────────────────────────
+        const dOff = Math.round(9 * this.SCALE);
+        const dBlr = Math.round(20 * this.SCALE);
+        this._drawDisc(ctx, CX, CY, DISC_R, p.bg, p.shadowDark, p.shadowLight, dOff, dBlr);
+        // ── 7. Optional 3D convex shading overlay ─────────────────────────────────
+        if (this._config.disc_3d)
+            this._drawDisc3D(ctx);
+        // ── 8. Over-disc endpoint markers ─────────────────────────────────────────
+        this._drawMarkersOver(ctx, p);
+        // ── 9. Over-disc range indicator ──────────────────────────────────────────
+        this._drawRangeOver(ctx, p);
+        // ── 10. Handle button (skipped in display_only) ───────────────────────────
+        if (!displayOnly) {
+            const hp = this._handlePos();
+            const hOff = Math.round(5 * this.SCALE);
+            const hBlr = Math.round(12 * this.SCALE);
+            this._drawDisc(ctx, hp.x, hp.y, HANDLE_R, p.handleBg, p.shadowDark, p.shadowLight, hOff, hBlr);
+            ctx.beginPath();
+            ctx.arc(hp.x, hp.y, Math.max(2, Math.round(HANDLE_R * 0.22)), 0, Math.PI * 2);
+            ctx.fillStyle = p.handleDot;
+            ctx.fill();
+        }
+        this._updateText();
+    }
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Range-style methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    /** External range indicators drawn BEFORE the disc (appear behind it) */
+    _drawRangeUnder(ctx, p) {
+        var _a;
+        if (!this._config)
+            return;
+        const rs = (_a = this._config.range_style) !== null && _a !== void 0 ? _a : "none";
+        if (rs === "progress")
+            this._drawProgressTrack(ctx, p);
+        // dial_ticks drawn over (they sit outside disc, no layering needed)
+    }
+    /** External range indicators drawn AFTER the disc */
+    _drawRangeOver(ctx, p) {
+        var _a;
+        if (!this._config)
+            return;
+        const rs = (_a = this._config.range_style) !== null && _a !== void 0 ? _a : "none";
+        if (rs === "progress")
+            this._drawProgressArc(ctx, p);
+        if (rs === "dial_ticks")
+            this._drawDialTicks(ctx, p);
+    }
+    /**
+     * Progress style — grey full-range track outside the disc.
+     * Drawn under the disc so the disc covers the inner half, only the ring shows.
+     */
+    _drawProgressTrack(ctx, p) {
+        const { CX, CY, DISC_R, SCALE, START_ANG, END_ANG } = this;
+        const trackR = DISC_R + Math.round(8 * SCALE);
+        const lw = Math.max(2, Math.round(5 * SCALE));
+        // Outer neumorphic channel (inset ring)
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CX, CY, trackR, START_ANG, END_ANG, false);
+        ctx.strokeStyle = this._isDark ? "#181a1f" : "#c8c8c8";
+        ctx.lineWidth = lw + Math.round(2 * SCALE);
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(CX, CY, trackR, START_ANG, END_ANG, false);
+        ctx.strokeStyle = this._isDark ? "#2c3140" : "#f0f0f0";
+        ctx.lineWidth = lw;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.restore();
+    }
+    /** Progress arc — coloured fill up to current value, drawn over the track */
+    _drawProgressArc(ctx, p) {
+        var _a, _b;
+        if (!this._config || this._value <= 0.005)
+            return;
+        const { CX, CY, DISC_R, SCALE, START_ANG, END_ANG } = this;
+        const trackR = DISC_R + Math.round(8 * SCALE);
+        const lw = Math.max(2, Math.round(5 * SCALE));
+        const curAng = START_ANG + this._value * (END_ANG - START_ANG);
+        const colorStart = (_b = (_a = this._config.progress_color) !== null && _a !== void 0 ? _a : this._config.glow_color) !== null && _b !== void 0 ? _b : p.glow;
+        const colorEnd = this._config.progress_color_end;
+        // ── Resolve stroke style: gradient or solid ────────────────────────────
+        // We use createConicGradient (supported in all modern browsers) when a
+        // gradient is requested. It maps colour stops around a centre point by
+        // angle, which is exactly what an arc needs — the colour follows the arc
+        // rather than spanning a straight chord.
+        //
+        // Fallback (no gradient / browser missing createConicGradient): solid.
+        let strokeStyle = colorStart;
+        if (colorEnd) {
+            if (typeof ctx.createConicGradient === "function") {
+                // createConicGradient(startAngle, cx, cy) — angles in radians.
+                // We start the gradient at START_ANG so stop 0 = arc start colour.
+                const conic = ctx.createConicGradient(START_ANG, CX, CY);
+                // Map the value fraction within the full 0→1 stop space.
+                // The arc spans (END_ANG - START_ANG) radians out of 2π total.
+                // Stop positions are proportional fractions of the full circle (0–1).
+                const totalAngle = Math.PI * 2;
+                const arcSpan = END_ANG - START_ANG;
+                const gradEnd = (arcSpan / totalAngle) * this._value; // end at current value
+                const gradFull = arcSpan / totalAngle; // full arc span
+                conic.addColorStop(0, colorStart);
+                conic.addColorStop(gradEnd, colorEnd);
+                // Beyond the arc end, clamp to colorEnd (prevents colour bleeding)
+                conic.addColorStop(Math.min(gradFull + 0.01, 1), colorEnd);
+                conic.addColorStop(1, colorEnd);
+                strokeStyle = conic;
+            }
+            else {
+                // Fallback: linear gradient from arc start-point to end-point.
+                // Not as accurate for large arcs but acceptable.
+                const sx = CX + trackR * Math.cos(START_ANG);
+                const sy = CY + trackR * Math.sin(START_ANG);
+                const ex = CX + trackR * Math.cos(curAng);
+                const ey = CY + trackR * Math.sin(curAng);
+                const lin = ctx.createLinearGradient(sx, sy, ex, ey);
+                lin.addColorStop(0, colorStart);
+                lin.addColorStop(1, colorEnd);
+                strokeStyle = lin;
+            }
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CX, CY, trackR, START_ANG, curAng, false);
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lw;
+        ctx.lineCap = "round";
+        // Glow uses the start colour (most visible at the handle end)
+        ctx.shadowColor = colorEnd !== null && colorEnd !== void 0 ? colorEnd : colorStart;
+        ctx.shadowBlur = Math.round(6 * SCALE);
+        ctx.stroke();
+        ctx.restore();
+    }
+    /**
+     * Dial ticks — evenly spaced radial marks around the outside of the disc,
+     * like a physical analogue control. Matches the right knob in the reference image.
+     * Ticks within the current value range are brighter.
+     */
+    _drawDialTicks(ctx, p) {
+        var _a, _b, _c;
+        if (!this._config)
+            return;
+        const { CX, CY, DISC_R, SCALE, START_ANG, END_ANG } = this;
+        const count = Math.max(5, Math.min(41, (_a = this._config.dial_ticks) !== null && _a !== void 0 ? _a : 21));
+        const gapR = Math.round(4 * SCALE);
+        const tickLen = Math.round(10 * SCALE);
+        const innerR = DISC_R + gapR;
+        const outerR = DISC_R + gapR + tickLen;
+        const lw = Math.max(1, Math.round(1.5 * SCALE));
+        const RANGE = END_ANG - START_ANG;
+        const curAng = START_ANG + this._value * RANGE;
+        // Resolve gradient colours — same keys as the progress arc so the two
+        // styles share a consistent colour language when used together.
+        const colorStart = (_c = (_b = this._config.progress_color) !== null && _b !== void 0 ? _b : this._config.glow_color) !== null && _c !== void 0 ? _c : p.glow;
+        const colorEnd = this._config.progress_color_end; // undefined = solid
+        for (let i = 0; i < count; i++) {
+            const t = i / (count - 1); // 0 at min, 1 at max
+            const ang = START_ANG + t * RANGE;
+            const ix = CX + innerR * Math.cos(ang);
+            const iy = CY + innerR * Math.sin(ang);
+            const ox = CX + outerR * Math.cos(ang);
+            const oy = CY + outerR * Math.sin(ang);
+            const active = ang <= curAng + 0.001; // small epsilon for floating-point safety
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(ix, iy);
+            ctx.lineTo(ox, oy);
+            if (active) {
+                if (colorEnd) {
+                    // Interpolate colour along the arc by tick position t
+                    ctx.strokeStyle = hexLerp(colorStart, colorEnd, t);
+                }
+                else {
+                    // Solid accent colour — use progress_color / glow_color if set,
+                    // otherwise fall back to the classic bright-white/dark-black style.
+                    const hasExplicitColor = !!(this._config.progress_color
+                        || this._config.glow_color);
+                    ctx.strokeStyle = hasExplicitColor
+                        ? colorStart
+                        : (this._isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.40)");
+                }
+            }
+            else {
+                // Inactive ticks are always muted, regardless of gradient setting
+                ctx.strokeStyle = this._isDark
+                    ? "rgba(255,255,255,0.15)"
+                    : "rgba(0,0,0,0.14)";
+            }
+            ctx.lineWidth = lw;
+            ctx.lineCap = "round";
+            if (this._isDark) {
+                ctx.shadowColor = "#111";
+                ctx.shadowBlur = Math.round(2 * SCALE);
+                ctx.shadowOffsetX = Math.round(1 * SCALE);
+                ctx.shadowOffsetY = Math.round(1 * SCALE);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Endpoint marker methods (on the disc face)
+    // ═══════════════════════════════════════════════════════════════════════════
+    _drawMarkersUnder(ctx, p) {
+        var _a;
+        if (!this._config)
+            return;
+        const mode = (_a = this._config.markers) !== null && _a !== void 0 ? _a : "none";
+        if (mode === "none")
+            return;
+        if (mode === "trail" || mode === "combined")
+            this._drawTrail(ctx, p);
+        if (mode === "ghosts" || mode === "combined")
+            this._drawGhosts(ctx, p);
+    }
+    _drawMarkersOver(ctx, p) {
+        var _a;
+        if (!this._config)
+            return;
+        const mode = (_a = this._config.markers) !== null && _a !== void 0 ? _a : "none";
+        if (mode === "none")
+            return;
+        if (mode === "ticks" || mode === "combined")
+            this._drawTicks(ctx, p);
+        if (mode === "dots" || mode === "combined")
+            this._drawDots(ctx, p);
+    }
+    _drawTrail(ctx, p) {
+        const { CX, CY, DISC_R, HANDLE_R, SCALE, START_ANG, END_ANG } = this;
+        const orbit = DISC_R - HANDLE_R - 6 * SCALE;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CX, CY, orbit, START_ANG, END_ANG, false);
+        ctx.strokeStyle = this._isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)";
+        ctx.lineWidth = Math.max(1.5, 3 * SCALE);
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.restore();
+    }
+    _drawTicks(ctx, p) {
+        const { CX, CY, DISC_R, SCALE, START_ANG, END_ANG } = this;
+        const tickLen = Math.round(11 * SCALE);
+        for (const ang of [START_ANG, END_ANG]) {
+            const ox = CX + DISC_R * Math.cos(ang);
+            const oy = CY + DISC_R * Math.sin(ang);
+            const ix = CX + (DISC_R - tickLen) * Math.cos(ang);
+            const iy = CY + (DISC_R - tickLen) * Math.sin(ang);
+            ctx.save();
+            ctx.shadowColor = p.shadowDark;
+            ctx.shadowBlur = Math.round(3 * SCALE);
+            ctx.shadowOffsetX = Math.round(1 * SCALE);
+            ctx.shadowOffsetY = Math.round(1 * SCALE);
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ix, iy);
+            ctx.strokeStyle = this._isDark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.18)";
+            ctx.lineWidth = Math.max(1.5, 2.5 * SCALE);
+            ctx.lineCap = "round";
+            ctx.stroke();
+            ctx.restore();
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ix, iy);
+            ctx.strokeStyle = this._isDark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)";
+            ctx.lineWidth = Math.max(1, 1 * SCALE);
+            ctx.lineCap = "round";
+            ctx.stroke();
+        }
+    }
+    _drawDots(ctx, p) {
+        const { CX, CY, DISC_R, HANDLE_R, SCALE, START_ANG, END_ANG } = this;
+        const orbit = DISC_R - HANDLE_R - 6 * SCALE;
+        const dotR = Math.max(2.5, 4 * SCALE);
+        const colors = [hexAlpha(p.accent1, 0.55), hexAlpha(p.accent2, 0.80)];
+        for (const [i, ang] of [[0, START_ANG], [1, END_ANG]]) {
+            const px = CX + orbit * Math.cos(ang);
+            const py = CY + orbit * Math.sin(ang);
+            ctx.save();
+            ctx.shadowColor = colors[i];
+            ctx.shadowBlur = Math.round(8 * SCALE);
+            ctx.beginPath();
+            ctx.arc(px, py, dotR, 0, Math.PI * 2);
+            ctx.fillStyle = colors[i];
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+    _drawGhosts(ctx, p) {
+        const { CX, CY, DISC_R, HANDLE_R, SCALE, START_ANG, END_ANG } = this;
+        const orbit = DISC_R - HANDLE_R - 6 * SCALE;
+        const glowRad = DISC_R * 0.45;
+        for (const [i, ang] of [[0, START_ANG], [1, END_ANG]]) {
+            const px = CX + orbit * Math.cos(ang);
+            const py = CY + orbit * Math.sin(ang);
+            const col = i === 0 ? p.accent1 : p.accent2;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(CX, CY, DISC_R, 0, Math.PI * 2);
+            ctx.clip();
+            const gr = ctx.createRadialGradient(px, py, 0, px, py, glowRad);
+            gr.addColorStop(0, hexAlpha(col, 0.18));
+            gr.addColorStop(0.4, hexAlpha(col, 0.07));
+            gr.addColorStop(1, hexAlpha(col, 0));
+            ctx.fillStyle = gr;
+            ctx.fillRect(CX - DISC_R, CY - DISC_R, DISC_R * 2, DISC_R * 2);
+            ctx.restore();
+        }
+    }
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 3D disc shading
+    // ═══════════════════════════════════════════════════════════════════════════
+    /**
+     * Convex 3D shading overlay. A radial gradient from near-white at top-left
+     * to near-transparent at bottom-right, simulating a convex surface lit from
+     * top-left. Applied after the disc fill so it sits on top of the base colour.
+     */
+    _drawDisc3D(ctx) {
+        const { CX, CY, DISC_R } = this;
+        // Light source offset: top-left, ~35% of radius
+        const lx = CX - DISC_R * 0.35;
+        const ly = CY - DISC_R * 0.35;
+        const grad = ctx.createRadialGradient(lx, ly, 0, CX, CY, DISC_R * 1.1);
+        if (this._isDark) {
+            grad.addColorStop(0, "rgba(255,255,255,0.13)");
+            grad.addColorStop(0.35, "rgba(255,255,255,0.05)");
+            grad.addColorStop(0.65, "rgba(0,0,0,0.04)");
+            grad.addColorStop(1, "rgba(0,0,0,0.18)");
+        }
+        else {
+            grad.addColorStop(0, "rgba(255,255,255,0.65)");
+            grad.addColorStop(0.35, "rgba(255,255,255,0.20)");
+            grad.addColorStop(0.65, "rgba(0,0,0,0.02)");
+            grad.addColorStop(1, "rgba(0,0,0,0.10)");
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CX, CY, DISC_R, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
+    }
+    _drawDisc(ctx, x, y, r, fill, shadowDark, shadowLight, offset, blur) {
+        const passes = [
+            [shadowDark, offset, offset],
+            [shadowLight, -offset, -offset],
+        ];
+        for (const [color, ox, oy] of passes) {
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = blur;
+            ctx.shadowOffsetX = ox;
+            ctx.shadowOffsetY = oy;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+    // ── Text update ───────────────────────────────────────────────────────────
+    _updateText() {
+        var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+        if (!this._config || !this.shadowRoot)
+            return;
+        const min = (_a = this._config.min) !== null && _a !== void 0 ? _a : 0;
+        const max = (_b = this._config.max) !== null && _b !== void 0 ? _b : 100;
+        const step = (_c = this._config.step) !== null && _c !== void 0 ? _c : 1;
+        const unit = (_d = this._config.unit) !== null && _d !== void 0 ? _d : "";
+        const raw = min + this._value * (max - min);
+        const decimals = step < 1 ? ((_g = (_f = String(step).split(".")[1]) === null || _f === void 0 ? void 0 : _f.length) !== null && _g !== void 0 ? _g : 1) : 0;
+        const sr = this.shadowRoot;
+        // ── Major title ─────────────────────────────────────────────────────────
+        const titleEl = sr.getElementById("title-label");
+        if (titleEl && labelVisible(this._config.title_label)) {
+            titleEl.textContent =
+                (_k = (_j = (_h = this._config.title_label) === null || _h === void 0 ? void 0 : _h.text) !== null && _j !== void 0 ? _j : this._config.label) !== null && _k !== void 0 ? _k : this._config.entity;
+        }
+        // ── Minor label ─────────────────────────────────────────────────────────
+        const minorEl = sr.getElementById("minor-label");
+        if (minorEl && labelVisible(this._config.minor_label)) {
+            minorEl.textContent = (_m = (_l = this._config.minor_label) === null || _l === void 0 ? void 0 : _l.text) !== null && _m !== void 0 ? _m : "";
+        }
+        // ── Current value ────────────────────────────────────────────────────────
+        const pos = (_o = this._config.value_position) !== null && _o !== void 0 ? _o : "below";
+        const activeId = pos === "center" ? "value-center-display" : "value-display";
+        const valEl = sr.getElementById(activeId);
+        if (valEl && labelVisible(this._config.value_label)) {
+            valEl.textContent = raw.toFixed(decimals) + unit;
+        }
+        // ── Min caption (static text) ────────────────────────────────────────────
+        const minEl = sr.getElementById("min-display");
+        if (minEl && labelVisible(this._config.min_label)) {
+            minEl.textContent = (_q = (_p = this._config.min_label) === null || _p === void 0 ? void 0 : _p.text) !== null && _q !== void 0 ? _q : "";
+        }
+        // ── Min numeric value ────────────────────────────────────────────────────
+        const minValEl = sr.getElementById("min-value-display");
+        if (minValEl && labelVisible(this._config.min_value_label)) {
+            minValEl.textContent = (_s = (_r = this._config.min_value_label) === null || _r === void 0 ? void 0 : _r.text) !== null && _s !== void 0 ? _s : (min.toFixed(decimals) + unit);
+        }
+        // ── Max caption (static text) ────────────────────────────────────────────
+        const maxEl = sr.getElementById("max-display");
+        if (maxEl && labelVisible(this._config.max_label)) {
+            maxEl.textContent = (_u = (_t = this._config.max_label) === null || _t === void 0 ? void 0 : _t.text) !== null && _u !== void 0 ? _u : "";
+        }
+        // ── Max numeric value ────────────────────────────────────────────────────
+        const maxValEl = sr.getElementById("max-value-display");
+        if (maxValEl && labelVisible(this._config.max_value_label)) {
+            maxValEl.textContent = (_w = (_v = this._config.max_value_label) === null || _v === void 0 ? void 0 : _v.text) !== null && _w !== void 0 ? _w : (max.toFixed(decimals) + unit);
+        }
+    }
+    _attachEvents() {
+        if (!this._canvas)
+            return;
+        // pointerdown on canvas only — starts the drag
+        this._canvas.addEventListener("pointerdown", this._onPointerDown);
+        // pointermove + pointerup on WINDOW — ensures we receive these even when
+        // the pointer leaves the canvas during a drag (very common on touch/mobile)
+        window.addEventListener("pointermove", this._onPointerMove);
+        window.addEventListener("pointerup", this._onPointerUp);
+        window.addEventListener("pointercancel", this._onPointerUp);
+    }
+    _detachEvents() {
+        if (!this._canvas)
+            return;
+        this._canvas.removeEventListener("pointerdown", this._onPointerDown);
+        window.removeEventListener("pointermove", this._onPointerMove);
+        window.removeEventListener("pointerup", this._onPointerUp);
+        window.removeEventListener("pointercancel", this._onPointerUp);
+    }
+    // ── Geometry ──────────────────────────────────────────────────────────────
+    _handlePos() {
+        const a = this.START_ANG + this._value * (this.END_ANG - this.START_ANG);
+        // Orbit radius: inset from disc edge so handle button stays fully inside.
+        // DISC_R - HANDLE_R - 6 leaves a 6px gap between button edge and disc rim.
+        const orbit = this.DISC_R - this.HANDLE_R - 6;
+        return {
+            x: this.CX + orbit * Math.cos(a),
+            y: this.CY + orbit * Math.sin(a),
+        };
+    }
+    _isOnHandle(e) {
+        if (!this._canvas)
+            return false;
+        const rect = this._canvas.getBoundingClientRect();
+        // rect.width is the CSS display width (220px); canvas bitmap is W (260px)
+        const scale = this.W / rect.width;
+        const dx = (e.clientX - rect.left) * scale - this._handlePos().x;
+        const dy = (e.clientY - rect.top) * scale - this._handlePos().y;
+        return Math.sqrt(dx * dx + dy * dy) < this.HANDLE_R + 14;
+    }
+    _valueFromPointer(e) {
+        if (!this._canvas)
+            return this._value;
+        const rect = this._canvas.getBoundingClientRect();
+        // scale: bitmap coords (260px) relative to CSS display size (220px)
+        const scale = this.W / rect.width;
+        const cx = (e.clientX - rect.left) * scale - this.CX;
+        const cy = (e.clientY - rect.top) * scale - this.CY;
+        const { START_ANG, END_ANG } = this;
+        const RANGE = END_ANG - START_ANG;
+        let a = Math.atan2(cy, cx);
+        if (a < START_ANG - Math.PI * 2)
+            a += Math.PI * 2;
+        if (a < START_ANG)
+            a += Math.PI * 2;
+        return Math.max(0, Math.min(1, (a - START_ANG) / RANGE));
+    }
+    // ── Service call ──────────────────────────────────────────────────────────
+    _commitValue() {
+        var _a, _b, _c;
+        if ((_a = this._config) === null || _a === void 0 ? void 0 : _a.display_only)
+            return;
+        if (!this._hass || !((_b = this._config) === null || _b === void 0 ? void 0 : _b.service) || this._pendingScaled === null)
+            return;
+        // _pendingScaled was already set in _onPointerUp — just send it.
+        // No debounce: pointerup and pointercancel are both on window, so only one
+        // will fire per gesture. Calling the service immediately means Alexa gets
+        // the command the instant the user releases with zero artificial delay.
+        const scaled = this._pendingScaled;
+        const [domain, svc] = this._config.service.split(".");
+        this._hass.callService(domain, svc, {
+            entity_id: this._config.entity,
+            [(_c = this._config.service_data_key) !== null && _c !== void 0 ? _c : "value"]: scaled,
+        });
+    }
+    // ── Card meta ─────────────────────────────────────────────────────────────
+    static getStubConfig() {
+        return {
+            entity: "media_player.living_room",
+            attribute: "volume_level",
+            min: 0,
+            max: 100,
+            step: 1,
+            unit: "%",
+            service: "media_player.volume_set",
+            service_data_key: "volume_level",
+            scale: 0.01,
+            label: "Volume",
+            value_position: "below", // "below" | "center"
+            glow_color: undefined, // e.g. "#ff6b35" — omit to use theme default
+            markers: "none", // "none" | "ticks" | "trail" | "dots" | "ghosts" | "combined"
+            range_style: "none", // "none" | "progress" | "dial_ticks"
+            dial_ticks: 21, // number of ticks for dial_ticks style
+            progress_color: undefined, // CSS colour for progress arc (solid or gradient start)
+            progress_color_end: undefined, // CSS colour for gradient end — omit for solid
+            disc_3d: false, // true = convex 3D shading on disc
+            // Angular range — these defaults reproduce the current 270° bottom-centred arc
+            zero_angle: 0, // 0=bottom, 90=left, 180=top, 270=right
+            min_angle: 45, // degrees CW from zero_angle for MIN position
+            max_angle: 315, // degrees CW from zero_angle for MAX position
+            glow_intensity: 0.65, // 0.0 – 1.0
+            card_size: 220, // CSS px, 100–400. All other sizes scale from this.
+            disc_radius: undefined, // px override — omit to auto-scale with card_size
+            handle_radius: undefined, // px override — omit to auto-scale with card_size
+            value_label: { show: true, size: "22px", weight: 500 },
+            min_label: { show: true },
+            max_label: { show: true },
+        };
+    }
+    static getConfigElement() {
+        return document.createElement("neumorphic-rotary-slider-editor");
+    }
+}
+// ── Editor ────────────────────────────────────────────────────────────────────
+//
+// Custom HTML editor — collapsible sections, color swatches, font picker with
+// Google Fonts presets, range sliders with live value display, toggle switches.
+// Fires "config-changed" on every change, always preserving `type`.
+const EDITOR_CSS = `
+  :host { display:block; font-family:var(--paper-font-body1_-_font-family,sans-serif); }
+  .sec-hdr {
+    display:flex; align-items:center; gap:8px;
+    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--secondary-text-color,#8891a0);
+    padding:14px 0 6px; border-bottom:1px solid var(--divider-color,rgba(0,0,0,.08));
+    margin-bottom:10px; cursor:pointer; user-select:none;
+  }
+  .sec-hdr svg { flex-shrink:0; opacity:.55; transition:transform .18s ease; }
+  .sec-hdr.collapsed svg { transform:rotate(-90deg); }
+  .sec-body { margin-bottom:4px; }
+  .sec-body.hidden { display:none; }
+  label { display:block; font-size:12px; color:var(--secondary-text-color,#6b7280); margin-bottom:3px; font-weight:500; }
+  input[type=text],input[type=number],select {
+    width:100%; padding:8px 10px; border-radius:6px;
+    border:1px solid var(--divider-color,#d1d5db);
+    background:var(--card-background-color,#fff);
+    color:var(--primary-text-color,#111);
+    font-size:13px; box-sizing:border-box; font-family:inherit;
+    transition:border-color .15s;
+  }
+  input[type=text]:focus,input[type=number]:focus,select:focus { outline:none; border-color:var(--primary-color,#2196f3); }
+  .field { margin-bottom:8px; }
+  .row2 { display:flex; gap:8px; margin-bottom:8px; }
+  .row2 > * { flex:1; min-width:0; }
+  .row3 { display:flex; gap:6px; margin-bottom:8px; }
+  .row3 > * { flex:1; min-width:0; }
+  .range-wrap { display:flex; align-items:center; gap:8px; }
+  .range-wrap input[type=range] { flex:1; accent-color:var(--primary-color,#2196f3); }
+  .range-val { font-size:12px; font-weight:700; color:var(--primary-color,#2196f3); min-width:36px; text-align:right; font-family:monospace; }
+  .tog-row { display:flex; align-items:center; justify-content:space-between; padding:4px 0; margin-bottom:6px; }
+  .tog-row label { margin:0; }
+  .switch { position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; }
+  .switch input { opacity:0; width:0; height:0; }
+  .sw-track { position:absolute; cursor:pointer; inset:0; border-radius:20px; background:var(--divider-color,#ccc); transition:.2s; }
+  .sw-track::before { content:""; position:absolute; height:14px; width:14px; left:3px; bottom:3px; border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  input:checked + .sw-track { background:var(--primary-color,#2196f3); }
+  input:checked + .sw-track::before { transform:translateX(16px); }
+  .color-field { display:flex; align-items:center; gap:6px; }
+  .color-swatch { width:32px; height:32px; border-radius:6px; flex-shrink:0; border:1px solid var(--divider-color,#d1d5db); cursor:pointer; position:relative; overflow:hidden; }
+  .color-swatch input[type=color] { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px); opacity:0; cursor:pointer; padding:0; border:none; }
+  .color-field input[type=text] { flex:1; font-family:monospace; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .font-hint { font-size:10px; color:var(--secondary-text-color,#8891a0); margin-top:2px; display:block; }
+  ha-entity-picker { display:block; width:100%; margin-bottom:8px; }
+`;
+const FONT_PRESETS = [
+    { v: "", l: "Default (theme)" }, { v: "system-ui", l: "System UI" }, { v: "Arial", l: "Arial" },
+    { v: "Helvetica Neue", l: "Helvetica Neue" }, { v: "Georgia", l: "Georgia" },
+    { v: "Times New Roman", l: "Times New Roman" }, { v: "Courier New", l: "Courier New" },
+    { v: "Roboto", l: "Roboto" }, { v: "Open Sans", l: "Open Sans" }, { v: "Lato", l: "Lato" },
+    { v: "Montserrat", l: "Montserrat" }, { v: "Raleway", l: "Raleway" }, { v: "Poppins", l: "Poppins" },
+    { v: "Nunito", l: "Nunito" }, { v: "Oswald", l: "Oswald" }, { v: "Playfair Display", l: "Playfair Display" },
+    { v: "Merriweather", l: "Merriweather" }, { v: "Ubuntu", l: "Ubuntu" }, { v: "Inter", l: "Inter" },
+    { v: "Source Sans Pro", l: "Source Sans Pro" }, { v: "Exo 2", l: "Exo 2" },
+    { v: "Josefin Sans", l: "Josefin Sans" }, { v: "Quicksand", l: "Quicksand" },
+    { v: "__custom__", l: "✏ Custom…" },
+];
+const WEB_SAFE = new Set(["", "system-ui", "Arial", "Helvetica Neue", "Georgia", "Times New Roman", "Courier New", "monospace", "serif", "sans-serif"]);
+class NeumorphicRotarySliderCardEditor extends HTMLElement {
+    constructor() {
+        super(...arguments);
+        this._hass = null;
+        this._config = {};
+        this._sections = {};
+        this._built = false;
+    }
+    set hass(hass) {
+        var _a;
+        this._hass = hass;
+        (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelectorAll("ha-entity-picker").forEach(el => { el.hass = hass; });
+    }
+    setConfig(config) {
+        this._config = Object.assign({}, config);
+        if (!this._built) {
+            this.attachShadow({ mode: "open" });
+            this._built = true;
+        }
+        this._render();
+    }
+    _get(path, fb = "") {
+        var _a;
+        return (_a = path.split(".").reduce((o, k) => (o != null && typeof o === "object") ? o[k] : undefined, this._config)) !== null && _a !== void 0 ? _a : fb;
+    }
+    _set(path, value) {
+        const parts = path.split(".");
+        let cur = this._config;
+        for (let i = 0; i < parts.length - 1; i++) {
+            if (cur[parts[i]] == null || typeof cur[parts[i]] !== "object")
+                cur[parts[i]] = {};
+            cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = value;
+        this._fire();
+    }
+    _fire() {
+        this.dispatchEvent(new CustomEvent("config-changed", {
+            detail: { config: Object.assign({}, this._config) }, bubbles: true, composed: true,
+        }));
+    }
+    _loadFont(family) {
+        if (!family || WEB_SAFE.has(family))
+            return;
+        const id = `gfont-${family.replace(/\s+/g, "-")}`;
+        if (document.getElementById(id))
+            return;
+        const link = Object.assign(document.createElement("link"), {
+            id, rel: "stylesheet",
+            href: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@300;400;500;600;700&display=swap`,
+        });
+        document.head.appendChild(link);
+    }
+    _toggleSection(id) {
+        var _a, _b;
+        this._sections[id] = !this._sections[id];
+        (_a = this.shadowRoot.querySelector(`[data-sec="${id}"]`)) === null || _a === void 0 ? void 0 : _a.classList.toggle("collapsed", !!this._sections[id]);
+        (_b = this.shadowRoot.querySelector(`[data-secbody="${id}"]`)) === null || _b === void 0 ? void 0 : _b.classList.toggle("hidden", !!this._sections[id]);
+    }
+    // ── HTML builders ─────────────────────────────────────────────────────────
+    _sec(id, title, body) {
+        const c = !!this._sections[id];
+        return `<div class="sec-hdr${c ? " collapsed" : ""}" data-sec="${id}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+      ${title}</div>
+      <div class="sec-body${c ? " hidden" : ""}" data-secbody="${id}">${body}</div>`;
+    }
+    _text(path, lbl, ph = "") {
+        return `<div class="field"><label>${lbl}</label>
+      <input type="text" data-path="${path}" value="${String(this._get(path, "")).replace(/"/g, "&quot;")}" placeholder="${ph}">
+    </div>`;
+    }
+    _num(path, lbl, min, max, step = 1) {
+        return `<div class="field"><label>${lbl}</label>
+      <input type="number" data-path="${path}" value="${this._get(path, "")}" min="${min}" max="${max}" step="${step}">
+    </div>`;
+    }
+    _range(path, lbl, min, max, step, suffix = "") {
+        const v = Number(this._get(path, min));
+        return `<div class="field"><label>${lbl}</label>
+      <div class="range-wrap">
+        <input type="range" data-path="${path}" value="${v}" min="${min}" max="${max}" step="${step}" data-suffix="${suffix}">
+        <span class="range-val" data-rv="${path}">${v}${suffix}</span>
+      </div></div>`;
+    }
+    _select(path, lbl, opts) {
+        const cur = String(this._get(path, opts[0].value));
+        return `<div class="field"><label>${lbl}</label>
+      <select data-path="${path}">${opts.map(o => `<option value="${o.value}"${cur === o.value ? " selected" : ""}>${o.label}</option>`).join("")}</select>
+    </div>`;
+    }
+    _toggle(path, lbl) {
+        return `<div class="tog-row"><label>${lbl}</label>
+      <label class="switch"><input type="checkbox" data-path="${path}"${Boolean(this._get(path, false)) ? " checked" : ""}><span class="sw-track"></span></label>
+    </div>`;
+    }
+    _color(path, lbl, def = "#2196f3") {
+        let raw = String(this._get(path, "") || def);
+        if (!raw.startsWith("#"))
+            raw = def;
+        if (!/^#[0-9a-fA-F]{6}$/i.test(raw))
+            raw = def;
+        return `<div class="field"><label>${lbl}</label>
+      <div class="color-field" data-colorpath="${path}">
+        <div class="color-swatch" style="background:${raw}"><input type="color" value="${raw}"></div>
+        <input type="text" class="color-hex" value="${raw.toUpperCase()}" placeholder="#RRGGBB" maxlength="7">
+      </div></div>`;
+    }
+    _font(path, lbl) {
+        const cur = String(this._get(path, ""));
+        const isC = cur !== "" && !FONT_PRESETS.find(p => p.v === cur && p.v !== "__custom__");
+        const sel = isC ? "__custom__" : cur;
+        return `<div class="field"><label>${lbl}</label>
+      <select data-path="${path}" data-font-sel>
+        ${FONT_PRESETS.map(p => `<option value="${p.v}"${sel === p.v ? " selected" : ""}>${p.l}</option>`).join("")}
+      </select>
+      <input type="text" data-path="${path}" data-font-custom placeholder="e.g. Dancing Script"
+        style="${isC ? "" : "display:none"}" value="${isC ? cur : ""}">
+      <small class="font-hint">Google Fonts load automatically when selected.</small>
+    </div>`;
+    }
+    _labelBlock(prefix, hasText = true) {
+        return `
+      ${this._toggle(`${prefix}.show`, "Visible")}
+      ${hasText ? this._text(`${prefix}.text`, "Text override", "blank = auto") : ""}
+      <div class="row2">
+        ${this._text(`${prefix}.size`, "Size (e.g. 13px)", "13px")}
+        ${this._select(`${prefix}.weight`, "Weight", [
+            { value: "300", label: "300" }, { value: "400", label: "400" }, { value: "500", label: "500" },
+            { value: "600", label: "600" }, { value: "700", label: "700" },
+        ])}
+      </div>
+      ${this._font(`${prefix}.font`, "Font family")}
+      ${this._color(`${prefix}.color`, "Color", "#888888")}
+      <div class="row2">
+        ${this._select(`${prefix}.transform`, "Transform", [
+            { value: "", label: "None" }, { value: "uppercase", label: "Uppercase" },
+            { value: "lowercase", label: "Lowercase" }, { value: "capitalize", label: "Capitalize" },
+        ])}
+        ${this._text(`${prefix}.spacing`, "Letter spacing", "0.08em")}
+      </div>`;
+    }
+    // ── Main render ───────────────────────────────────────────────────────────
+    _render() {
+        const sr = this.shadowRoot;
+        const entityVal = String(this._get("entity", ""));
+        const entityEl = customElements.get("ha-entity-picker")
+            ? `<ha-entity-picker data-path="entity" value="${entityVal}" allow-custom-entity></ha-entity-picker>`
+            : this._text("entity", "Entity", "sensor.my_sensor");
+        const html = `
+    ${this._sec("entity", "🔌 Entity & Service", `
+      ${entityEl}
+      ${this._text("attribute", "Attribute (optional)", "e.g. volume_level")}
+      <div class="row2">
+        ${this._text("service", "Service", "e.g. media_player.volume_set")}
+        ${this._text("service_data_key", "Data key", "value")}
+      </div>
+      ${this._num("scale", "Scale", 0.0001, 100, 0.001)}
+    `)}
+    ${this._sec("range", "📐 Range & Value", `
+      <div class="row3">
+        ${this._num("min", "Min", -9999, 9999)}
+        ${this._num("max", "Max", -9999, 9999)}
+        ${this._num("step", "Step", 0.001, 1000, 0.001)}
+      </div>
+      ${this._text("unit", "Unit", "e.g. %")}
+      ${this._select("value_position", "Value position", [
+            { value: "below", label: "Below" }, { value: "center", label: "Center" },
+        ])}
+    `)}
+    ${this._sec("knob", "⬤ Knob Geometry", `
+      ${this._range("card_size", "Card size — diameter (px)", 100, 400, 10, "px")}
+      ${this._range("disc_radius", "Disc radius (px)", 40, 115, 1, "px")}
+      ${this._range("handle_radius", "Handle radius (px)", 8, 40, 1, "px")}
+      ${this._toggle("disc_3d", "3D convex shading")}
+      ${this._toggle("no_border", "No border / transparent background")}
+      ${this._toggle("display_only", "Display only — show value, no interaction")}
+    `)}
+    ${this._sec("glow", "✨ Glow", `
+      ${this._color("glow_color", "Glow colour", "#2196f3")}
+      ${this._range("glow_intensity", "Glow intensity", 0, 1, 0.05, "")}
+    `)}
+    ${this._sec("angles", "🔄 Angular Range", `
+      <small class="font-hint" style="display:block;margin-bottom:8px">0=bottom · 90=left · 180=top · 270=right</small>
+      ${this._range("zero_angle", "Zero angle", 0, 359, 1, "°")}
+      <div class="row2">
+        ${this._range("min_angle", "Min angle", 0, 359, 1, "°")}
+        ${this._range("max_angle", "Max angle", 1, 719, 1, "°")}
+      </div>
+    `)}
+    ${this._sec("rstyle", "〰 Range Style", `
+      ${this._select("range_style", "Style", [
+            { value: "none", label: "None" }, { value: "progress", label: "Progress arc" },
+            { value: "dial_ticks", label: "Dial ticks" },
+        ])}
+      ${this._range("dial_ticks", "Dial tick count", 5, 41, 1, "")}
+      ${this._color("progress_color", "Progress colour", "#2196f3")}
+      ${this._color("progress_color_end", "Gradient end (blank=solid)", "#32d48e")}
+      ${this._select("markers", "Endpoint markers", [
+            { value: "none", label: "None" }, { value: "ticks", label: "Ticks" },
+            { value: "trail", label: "Trail" }, { value: "dots", label: "Dots" },
+            { value: "ghosts", label: "Ghosts" }, { value: "combined", label: "Combined" },
+        ])}
+    `)}
+    ${this._sec("title_lbl", "𝗔 Major Label", this._labelBlock("title_label", true))}
+    ${this._sec("minor_lbl", "ᴬ Minor Label", this._labelBlock("minor_label", true))}
+    ${this._sec("value_lbl", "# Value Label", this._labelBlock("value_label", false))}
+    ${this._sec("min_lbl", "↙ Min Caption", this._labelBlock("min_label", true))}
+    ${this._sec("min_val_lbl", "↙ Min Value", this._labelBlock("min_value_label", false))}
+    ${this._sec("max_lbl", "↗ Max Caption", this._labelBlock("max_label", true))}
+    ${this._sec("max_val_lbl", "↗ Max Value", this._labelBlock("max_value_label", false))}
+    `;
+        const style = document.createElement("style");
+        style.textContent = EDITOR_CSS;
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        // Text & number
+        div.querySelectorAll("input[type=text][data-path]:not(.color-hex):not([data-font-custom]),input[type=number][data-path]").forEach(el => el.addEventListener("change", () => {
+            let v = el.type === "number"
+                ? (el.value === "" ? undefined : Number(el.value))
+                : el.value;
+            // Auto-append "px" for size fields if user types a bare number (e.g. "13" → "13px")
+            if (el.type === "text" && typeof v === "string" && el.dataset.path.endsWith(".size")) {
+                if (v !== "" && /^\d+(\.\d+)?$/.test(v))
+                    v = v + "px";
+            }
+            this._set(el.dataset.path, v);
+            this._render();
+        }));
+        // Selects
+        div.querySelectorAll("select[data-path]").forEach(sel => {
+            sel.addEventListener("change", () => {
+                if (sel.dataset.fontSel !== undefined) {
+                    const ci = sel.nextElementSibling;
+                    if (sel.value === "__custom__") {
+                        ci.style.display = "";
+                        ci.focus();
+                        return;
+                    }
+                    if (ci)
+                        ci.style.display = "none";
+                    if (sel.value)
+                        this._loadFont(sel.value);
+                }
+                this._set(sel.dataset.path, sel.value);
+                this._render();
+            });
+        });
+        // Custom font inputs
+        div.querySelectorAll("input[data-font-custom]").forEach(el => {
+            el.addEventListener("change", () => {
+                if (el.value.trim())
+                    this._loadFont(el.value.trim());
+                this._set(el.dataset.path, el.value.trim());
+                this._render();
+            });
+        });
+        // Checkboxes
+        div.querySelectorAll("input[type=checkbox][data-path]").forEach(el => {
+            el.addEventListener("change", () => { this._set(el.dataset.path, el.checked); this._render(); });
+        });
+        // Ranges
+        div.querySelectorAll("input[type=range][data-path]").forEach(el => {
+            el.addEventListener("input", () => {
+                const rv = div.querySelector(`[data-rv="${el.dataset.path}"]`);
+                if (rv)
+                    rv.textContent = el.value + (el.dataset.suffix || "");
+            });
+            el.addEventListener("change", () => { this._set(el.dataset.path, Number(el.value)); this._render(); });
+        });
+        // Color fields
+        div.querySelectorAll(".color-field[data-colorpath]").forEach(field => {
+            const path = field.dataset.colorpath;
+            const native = field.querySelector("input[type=color]");
+            const swatch = field.querySelector(".color-swatch");
+            const text = field.querySelector("input.color-hex");
+            native.addEventListener("input", () => { swatch.style.background = native.value; text.value = native.value.toUpperCase(); });
+            native.addEventListener("change", () => { this._set(path, native.value); this._render(); });
+            text.addEventListener("input", () => {
+                let v = text.value.trim();
+                if (!v.startsWith("#"))
+                    v = "#" + v;
+                if (/^#[0-9a-fA-F]{6}$/i.test(v)) {
+                    swatch.style.background = v;
+                    native.value = v;
+                }
+            });
+            text.addEventListener("change", () => {
+                let v = text.value.trim();
+                if (!v.startsWith("#"))
+                    v = "#" + v;
+                if (/^#[0-9a-fA-F]{6}$/i.test(v)) {
+                    this._set(path, v);
+                    this._render();
+                }
+            });
+        });
+        // Section headers
+        div.querySelectorAll(".sec-hdr[data-sec]").forEach(el => {
+            el.addEventListener("click", () => this._toggleSection(el.dataset.sec));
+        });
+        // Entity picker
+        const ep = div.querySelector("ha-entity-picker");
+        if (ep) {
+            if (this._hass)
+                ep.hass = this._hass;
+            ep.addEventListener("value-changed", (e) => {
+                this._set("entity", e.detail.value);
+                this._render();
+            });
+        }
+        sr.innerHTML = "";
+        sr.appendChild(style);
+        sr.appendChild(div);
+    }
+}
+customElements.define("neumorphic-rotary-slider-editor", NeumorphicRotarySliderCardEditor);
+// ── Register ──────────────────────────────────────────────────────────────────
+customElements.define("neumorphic-rotary-slider", NeumorphicRotarySliderCard);
+(_a = (_b = window).customCards) !== null && _a !== void 0 ? _a : (_b.customCards = []);
+window.customCards.push({
+    type: "neumorphic-rotary-slider",
+    name: "Neumorphic Rotary Slider",
+    description: "Circular knob slider — fully configurable labels, Neumorphic theme",
+});
+
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+ * neumorphic-container-card.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+/**
+ * neumorphic-container-card  v1.1.0
+ * ─────────────────────────────────────────────────────────────────
+ * A dependency-free Home Assistant Lovelace custom card.
+ * Wraps child cards in a neumorphic panel with a full visual editor.
+ *
+ * Inspired by:
+ *   • https://github.com/etnlbck/hacs-neumorphic-template
+ *   • https://github.com/PiotrMachowski/Home-Assistant-Lovelace-Local-Conditional-card
+ *
+ * Config options:
+ *   type:         custom:neumorphic-container-card
+ *   title:        "My Section"      # optional
+ *   icon:         mdi:home          # optional MDI icon
+ *   style:        raised            # raised | inset | flat
+ *   padding:      16                # px
+ *   radius:       16                # px
+ *   gap:          12                # px between children
+ *   columns:      1                 # grid columns 1–4 (default 1 = single column)
+ *   collapsible:  false             # click header to collapse
+ *   default_open: true              # initial open state
+ *   cards:                          # required – list of child card configs
+ *     - type: entities
+ *       entities: [sun.sun]
+ */
+
+const VERSION = "1.2.0";
+const EDITOR_TAG = "neumorphic-container-card-editor";
+
+// ═══════════════════════════════════════════════════════════════════
+//  SVG ICON HELPER
+// ═══════════════════════════════════════════════════════════════════
+const SVG_PATHS = {
+  chevron: "M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z",
+  edit:    "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
+  delete:  "M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z",
+  up:      "M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z",
+  down:    "M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z",
+  add:     "M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z",
+};
+
+function svgIcon(name) {
+  return `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="${SVG_PATHS[name]}"/></svg>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MINI YAML SERIALISER / PARSER
+//  (handles the simple subset used in HA card configs)
+// ═══════════════════════════════════════════════════════════════════
+function toYaml(obj, indent) {
+  indent = indent || 0;
+  var pad = Array(indent + 1).join("  ");
+  if (Array.isArray(obj)) {
+    if (!obj.length) return "[]";
+    return obj.map(function(item) {
+      var v = toYaml(item, indent + 1);
+      if (typeof item === "object" && item !== null) {
+        return pad + "-\n" + v;
+      }
+      return pad + "- " + v;
+    }).join("\n");
+  }
+  if (obj !== null && typeof obj === "object") {
+    return Object.keys(obj).map(function(k) {
+      var v = obj[k];
+      if (Array.isArray(v)) {
+        if (!v.length) return pad + k + ": []";
+        return pad + k + ":\n" + toYaml(v, indent + 1);
+      }
+      if (v !== null && typeof v === "object") {
+        return pad + k + ":\n" + toYaml(v, indent + 1);
+      }
+      return pad + k + ": " + v;
+    }).join("\n");
+  }
+  return String(obj);
+}
+
+function parseScalar(s) {
+  if (s === "true")  return true;
+  if (s === "false") return false;
+  if (s === "null" || s === "~") return null;
+  if (s !== "" && !isNaN(s)) return Number(s);
+  if ((s[0] === "'" && s[s.length-1] === "'") ||
+      (s[0] === '"' && s[s.length-1] === '"')) return s.slice(1,-1);
+  return s;
+}
+
+function parseBlock(lines, cursor, baseIndent) {
+  var obj = {}, list = null;
+  while (cursor.pos < lines.length) {
+    var raw = lines[cursor.pos];
+    if (!raw.trim() || raw.trim()[0] === "#") { cursor.pos++; continue; }
+    var ind = raw.search(/\S/);
+    if (ind < baseIndent) break;
+    var line = raw.trim();
+    if (line.slice(0,2) === "- ") {
+      if (list === null) list = [];
+      var rest = line.slice(2).trim();
+      cursor.pos++;
+      if (!rest) { list.push(parseBlock(lines, cursor, ind + 2)); }
+      else { list.push(parseScalar(rest)); }
+      continue;
+    }
+    var ci = line.indexOf(": ");
+    var ce = line.endsWith(":") ? line.length - 1 : -1;
+    if (ci === -1 && ce === -1) { cursor.pos++; continue; }
+    var key = ci !== -1 ? line.slice(0, ci) : line.slice(0, ce);
+    cursor.pos++;
+    if (ci === -1) {
+      obj[key] = parseBlock(lines, cursor, ind + 2);
+    } else {
+      var val = line.slice(ci + 2).trim();
+      if (!val || val === "|" || val === ">") {
+        obj[key] = parseBlock(lines, cursor, ind + 2);
+      } else {
+        obj[key] = parseScalar(val);
+      }
+    }
+  }
+  return list !== null ? list : obj;
+}
+
+function fromYaml(text) {
+  var t = text.trim();
+  if (t[0] === "{" || t[0] === "[") return JSON.parse(t);
+  return parseBlock(text.split("\n"), { pos: 0 }, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CARD STYLES
+// ═══════════════════════════════════════════════════════════════════
+var CARD_STYLES = [
+  ":host{display:block}",
+  ".nm-container{",
+  "  --nm-bg:var(--primary-background-color,#e0e5ec);",
+  "  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(163,177,198,.6));",
+  "  --nm-shadow-light:var(--nm-shadow-light-color,rgba(255,255,255,.8));",
+  "  --nm-text:var(--primary-text-color,#44506a);",
+  "  --nm-accent:var(--accent-color,#6c8ebf);",
+  "  --nm-radius:16px;--nm-padding:16px;--nm-gap:12px;",
+  "  background:var(--nm-bg);border-radius:var(--nm-radius);",
+  "  padding:var(--nm-padding);box-sizing:border-box;transition:box-shadow .25s ease}",
+  ".nm-container.style-raised{box-shadow:6px 6px 12px var(--nm-shadow-dark),-6px -6px 12px var(--nm-shadow-light)}",
+  ".nm-container.style-inset{box-shadow:inset 6px 6px 12px var(--nm-shadow-dark),inset -6px -6px 12px var(--nm-shadow-light)}",
+  ".nm-container.style-flat{box-shadow:3px 3px 6px var(--nm-shadow-dark),-3px -3px 6px var(--nm-shadow-light);opacity:.9}",
+  ".nm-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;",
+  "  border-bottom:1px solid rgba(0,0,0,.06);cursor:default;user-select:none}",
+  ".nm-header.clickable{cursor:pointer}",
+  ".nm-header-icon{--mdc-icon-size:20px;color:var(--nm-accent);display:flex;align-items:center}",
+  ".nm-header-title{flex:1;font-size:.95rem;font-weight:600;letter-spacing:.03em;",
+  "  color:var(--nm-text);text-transform:uppercase}",
+  ".nm-header-toggle{color:var(--nm-text);opacity:.45;display:flex;align-items:center;",
+  "  transition:transform .25s ease,opacity .2s ease}",
+  ".nm-header-toggle.collapsed{transform:rotate(-90deg)}",
+  ".nm-cards{display:grid;grid-template-columns:repeat(var(--nm-cols,1),1fr);",
+  "  gap:var(--nm-gap);overflow:hidden;",
+  "  transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s ease;max-height:9999px;opacity:1}",
+  ".nm-cards.collapsed{max-height:0!important;opacity:0;pointer-events:none}",
+  ".nm-child-wrap{border-radius:10px;overflow:hidden;background:var(--nm-bg);",
+  "  box-shadow:inset 3px 3px 7px var(--nm-shadow-dark),inset -3px -3px 7px var(--nm-shadow-light)}",
+].join("\n");
+
+// ═══════════════════════════════════════════════════════════════════
+//  EDITOR STYLES
+// ═══════════════════════════════════════════════════════════════════
+var EDITOR_STYLES = `
+:host{display:block}
+.editor-wrap{
+  --nm-bg:var(--primary-background-color,#e0e5ec);
+  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(163,177,198,.5));
+  --nm-shadow-light:var(--nm-shadow-light-color,rgba(255,255,255,.8));
+  --nm-text:var(--primary-text-color,#44506a);
+  --nm-text-sec:var(--secondary-text-color,#6b7a99);
+  --nm-accent:var(--accent-color,#6c8ebf);
+  --nm-red:var(--error-color,#d9534f);
+  background:var(--nm-bg);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:4px 4px 8px var(--nm-shadow-dark),-4px -4px 8px var(--nm-shadow-light);
+  display:flex;flex-direction:column;gap:14px;
+  font-family:var(--paper-font-body1_-_font-family,sans-serif);
+  color:var(--nm-text);box-sizing:border-box;
+}
+.section-title{
+  font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--nm-text-sec);margin:4px 0 2px;padding-bottom:4px;
+  border-bottom:1px solid rgba(0,0,0,.07);
+}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.nm-field{display:flex;flex-direction:column;gap:4px}
+.nm-field label{font-size:.75rem;font-weight:600;color:var(--nm-text-sec);letter-spacing:.02em}
+.nm-field input[type=text],.nm-field input[type=number],.nm-field select{
+  appearance:none;-webkit-appearance:none;
+  background:var(--nm-bg);border:none;outline:none;
+  border-radius:8px;padding:8px 10px;font-size:.9rem;color:var(--nm-text);
+  box-shadow:inset 3px 3px 6px var(--nm-shadow-dark),inset -3px -3px 6px var(--nm-shadow-light);
+  width:100%;box-sizing:border-box;transition:box-shadow .15s ease;cursor:pointer;
+}
+.nm-field input[type=text]:focus,.nm-field input[type=number]:focus,.nm-field select:focus{
+  box-shadow:inset 2px 2px 5px var(--nm-shadow-dark),inset -2px -2px 5px var(--nm-shadow-light),
+    0 0 0 2px var(--nm-accent);
+}
+.nm-field input[type=number]{-moz-appearance:textfield}
+.nm-field input[type=number]::-webkit-inner-spin-button,
+.nm-field input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+.nm-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nm-toggle-label{font-size:.85rem;font-weight:500;color:var(--nm-text)}
+.nm-switch{position:relative;width:42px;height:24px;flex-shrink:0}
+.nm-switch input{opacity:0;width:0;height:0}
+.nm-switch .track{
+  position:absolute;inset:0;border-radius:12px;background:var(--nm-bg);
+  box-shadow:inset 2px 2px 5px var(--nm-shadow-dark),inset -2px -2px 5px var(--nm-shadow-light);
+  transition:background .2s;cursor:pointer;
+}
+.nm-switch input:checked+.track{background:var(--nm-accent)}
+.nm-switch .thumb{
+  position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+  background:var(--nm-bg);box-shadow:1px 1px 4px var(--nm-shadow-dark);
+  transition:transform .2s;pointer-events:none;
+}
+.nm-switch input:checked~.thumb{transform:translateX(18px)}
+.style-picker{display:flex;gap:8px}
+.style-btn{
+  flex:1;padding:8px 4px;border:none;border-radius:8px;background:var(--nm-bg);
+  color:var(--nm-text-sec);font-size:.8rem;font-weight:600;letter-spacing:.02em;cursor:pointer;
+  transition:box-shadow .15s ease,color .15s ease;
+  box-shadow:3px 3px 6px var(--nm-shadow-dark),-3px -3px 6px var(--nm-shadow-light);
+}
+.style-btn:hover{color:var(--nm-accent)}
+.style-btn.active{
+  box-shadow:inset 3px 3px 6px var(--nm-shadow-dark),inset -3px -3px 6px var(--nm-shadow-light);
+  color:var(--nm-accent);font-weight:700;
+}
+.nm-slider-row{display:flex;align-items:center;gap:10px}
+.nm-slider-row input[type=range]{
+  flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;
+  background:var(--nm-bg);
+  box-shadow:inset 2px 2px 4px var(--nm-shadow-dark),inset -2px -2px 4px var(--nm-shadow-light);
+  outline:none;cursor:pointer;
+}
+.nm-slider-row input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--nm-accent);box-shadow:1px 1px 4px var(--nm-shadow-dark);cursor:pointer;
+}
+.nm-slider-row input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:var(--nm-accent);
+  border:none;box-shadow:1px 1px 4px var(--nm-shadow-dark);cursor:pointer;
+}
+.nm-slider-val{min-width:36px;text-align:right;font-size:.85rem;font-weight:600;color:var(--nm-accent)}
+.cards-list{display:flex;flex-direction:column;gap:8px}
+.card-item{
+  display:flex;align-items:center;gap:8px;background:var(--nm-bg);
+  border-radius:8px;padding:8px 10px;
+  box-shadow:inset 2px 2px 5px var(--nm-shadow-dark),inset -2px -2px 5px var(--nm-shadow-light);
+}
+.card-item-label{
+  flex:1;font-size:.85rem;font-weight:500;color:var(--nm-text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.card-item-badge{
+  font-size:.7rem;padding:2px 7px;border-radius:4px;background:var(--nm-accent);
+  color:#fff;font-weight:700;letter-spacing:.02em;flex-shrink:0;
+}
+.icon-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border:none;border-radius:7px;background:var(--nm-bg);
+  color:var(--nm-text-sec);cursor:pointer;flex-shrink:0;padding:0;
+  box-shadow:2px 2px 5px var(--nm-shadow-dark),-2px -2px 5px var(--nm-shadow-light);
+  transition:color .15s,box-shadow .15s;
+}
+.icon-btn:hover{color:var(--nm-accent)}
+.icon-btn.danger:hover{color:var(--nm-red)}
+.icon-btn.active{
+  box-shadow:inset 2px 2px 4px var(--nm-shadow-dark),inset -2px -2px 4px var(--nm-shadow-light);
+  color:var(--nm-accent);
+}
+.add-card-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px;border:none;border-radius:8px;background:var(--nm-bg);
+  color:var(--nm-accent);font-size:.85rem;font-weight:600;cursor:pointer;
+  box-shadow:3px 3px 6px var(--nm-shadow-dark),-3px -3px 6px var(--nm-shadow-light);
+  transition:box-shadow .15s,opacity .15s;width:100%;
+}
+.add-card-btn:hover{opacity:.85}
+.yaml-area{display:none;flex-direction:column;gap:6px;
+  background:var(--nm-bg);border-radius:10px;padding:12px;
+  box-shadow:inset 3px 3px 7px var(--nm-shadow-dark),inset -3px -3px 7px var(--nm-shadow-light);
+}
+.yaml-area.open{display:flex}
+.yaml-area textarea{
+  width:100%;min-height:120px;resize:vertical;background:transparent;
+  border:none;outline:none;border-radius:6px;padding:8px;
+  font-size:.82rem;font-family:monospace;color:var(--nm-text);
+  border:1px solid rgba(0,0,0,.08);box-sizing:border-box;
+}
+.yaml-area textarea:focus{outline:2px solid var(--nm-accent);outline-offset:0}
+.yaml-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:2px}
+.yaml-btn{
+  padding:6px 14px;border:none;border-radius:7px;background:var(--nm-bg);
+  font-size:.8rem;font-weight:600;cursor:pointer;color:var(--nm-text-sec);
+  box-shadow:2px 2px 5px var(--nm-shadow-dark),-2px -2px 5px var(--nm-shadow-light);
+  transition:color .15s;
+}
+.yaml-btn.primary{color:var(--nm-accent)}
+.yaml-btn:hover{opacity:.85}
+.yaml-error{
+  font-size:.78rem;color:var(--nm-red);padding:4px 8px;
+  background:rgba(217,83,79,.08);border-radius:5px;
+}
+.note{
+  font-size:.75rem;color:var(--nm-text-sec);padding:6px 8px;
+  background:rgba(108,142,191,.08);border-radius:6px;
+  border-left:3px solid var(--nm-accent);line-height:1.5;
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+//  VISUAL EDITOR ELEMENT
+// ═══════════════════════════════════════════════════════════════════
+class NeumorphicContainerCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = null;
+    this._hass   = null;
+    this._editingIdx = null; // null | number | "new"
+  }
+
+  set hass(h) { this._hass = h; }
+
+  setConfig(config) {
+    this._config = {
+      style:        config.style        !== undefined ? config.style        : "raised",
+      title:        config.title        !== undefined ? config.title        : "",
+      icon:         config.icon         !== undefined ? config.icon         : "",
+      padding:      config.padding      !== undefined ? config.padding      : 16,
+      radius:       config.radius       !== undefined ? config.radius       : 16,
+      gap:          config.gap          !== undefined ? config.gap          : 12,
+      columns:      config.columns      !== undefined ? config.columns      : 1,
+      collapsible:  config.collapsible  !== undefined ? config.collapsible  : false,
+      default_open: config.default_open !== undefined ? config.default_open : true,
+      cards:        Array.isArray(config.cards) ? config.cards.slice() : [],
+    };
+    this._render();
+  }
+
+  _fire() {
+    var cfg = this._config;
+    // HA requires "type" to always be present in the config-changed payload,
+    // otherwise the editor throws "No type provided" / "Nessun tipo fornito".
+    var out = {
+      type:         "custom:neumorphic-container-card",
+      style:        cfg.style,
+      columns:      cfg.columns,
+      padding:      cfg.padding,
+      radius:       cfg.radius,
+      gap:          cfg.gap,
+      collapsible:  cfg.collapsible,
+      default_open: cfg.default_open,
+      cards:        cfg.cards,
+    };
+    // Only include optional string fields when they have a value
+    if (cfg.title) out.title = cfg.title;
+    if (cfg.icon)  out.icon  = cfg.icon;
+
+    var ev = new CustomEvent("config-changed", {
+      bubbles: true, composed: true,
+      detail: { config: out },
+    });
+    this.dispatchEvent(ev);
+  }
+
+  _render() {
+    var root = this.shadowRoot;
+    root.innerHTML = "";
+    var style = document.createElement("style");
+    style.textContent = EDITOR_STYLES;
+    root.appendChild(style);
+    var wrap = document.createElement("div");
+    wrap.className = "editor-wrap";
+    root.appendChild(wrap);
+    this._wrap = wrap;
+    this._buildContent();
+  }
+
+  _buildContent() {
+    var wrap = this._wrap;
+    wrap.innerHTML = "";
+    var cfg = this._config;
+
+    // ── APPEARANCE ────────────────────────────────────────────────
+    wrap.appendChild(this._sectionTitle("Appearance"));
+
+    // Style picker
+    var sp = this._el("div", "style-picker");
+    ["raised","inset","flat"].forEach(function(s) {
+      var btn = this._el("button", "style-btn" + (cfg.style === s ? " active" : ""));
+      btn.textContent = s[0].toUpperCase() + s.slice(1);
+      btn.addEventListener("click", function() {
+        this._config.style = s;
+        this._fire(); this._buildContent();
+      }.bind(this));
+      sp.appendChild(btn);
+    }.bind(this));
+    wrap.appendChild(this._fieldWrap("Style", sp));
+
+    // Columns picker
+    var cp = this._el("div", "style-picker");
+    [1, 2, 3, 4].forEach(function(n) {
+      var btn = this._el("button", "style-btn" + (cfg.columns === n ? " active" : ""));
+      btn.textContent = n + (n === 1 ? " col" : " cols");
+      btn.addEventListener("click", function() {
+        this._config.columns = n;
+        this._fire(); this._buildContent();
+      }.bind(this));
+      cp.appendChild(btn);
+    }.bind(this));
+    wrap.appendChild(this._fieldWrap("Grid columns", cp));
+
+    // ── HEADER ───────────────────────────────────────────────────
+    wrap.appendChild(this._sectionTitle("Header"));
+
+    var row1 = this._el("div", "row");
+    row1.appendChild(this._textField("Title", "title", cfg.title, "e.g. Living Room"));
+    row1.appendChild(this._textField("Icon",  "icon",  cfg.icon,  "e.g. mdi:home"));
+    wrap.appendChild(row1);
+
+    wrap.appendChild(this._toggleRow("Collapsible header", "collapsible", cfg.collapsible));
+    if (cfg.collapsible) {
+      wrap.appendChild(this._toggleRow("Default open", "default_open", cfg.default_open));
+    }
+
+    // ── SPACING ───────────────────────────────────────────────────
+    wrap.appendChild(this._sectionTitle("Spacing"));
+    wrap.appendChild(this._sliderField("Padding",       "padding", cfg.padding, 0, 48));
+    wrap.appendChild(this._sliderField("Corner radius", "radius",  cfg.radius,  0, 40));
+    wrap.appendChild(this._sliderField("Gap",           "gap",     cfg.gap,     0, 40));
+
+    // ── CHILD CARDS ───────────────────────────────────────────────
+    wrap.appendChild(this._sectionTitle("Child Cards"));
+
+    var list = this._el("div", "cards-list");
+    wrap.appendChild(list);
+
+    cfg.cards.forEach(function(card, idx) {
+      list.appendChild(this._cardItem(card, idx, cfg.cards.length));
+      if (this._editingIdx === idx) {
+        list.appendChild(this._yamlEditor(idx));
+      }
+    }.bind(this));
+
+    // "New" YAML editor
+    if (this._editingIdx === "new") {
+      wrap.appendChild(this._yamlEditor("new"));
+    } else {
+      var addBtn = this._el("button", "add-card-btn");
+      addBtn.innerHTML = svgIcon("add") + " &nbsp;Add child card";
+      addBtn.addEventListener("click", function() {
+        this._editingIdx = "new";
+        this._buildContent();
+      }.bind(this));
+      wrap.appendChild(addBtn);
+    }
+
+    // Note
+    var note = this._el("p", "note");
+    note.textContent = "Child cards are configured as YAML. " +
+      "Use any valid Lovelace card config including custom: cards.";
+    wrap.appendChild(note);
+  }
+
+  // ── Card list item ───────────────────────────────────────────────
+  _cardItem(card, idx, total) {
+    var item = this._el("div", "card-item");
+
+    var badge = this._el("span", "card-item-badge");
+    badge.textContent = idx + 1;
+    item.appendChild(badge);
+
+    var label = this._el("span", "card-item-label");
+    label.title = card.type || "";
+    label.textContent = (card.title || card.name || card.type || "card") +
+      (card.entity ? " · " + card.entity : "");
+    item.appendChild(label);
+
+    // Move up
+    if (idx > 0) {
+      var up = this._iconBtn("up", "Move up");
+      up.addEventListener("click", function() {
+        var c = this._config.cards;
+        var tmp = c[idx-1]; c[idx-1] = c[idx]; c[idx] = tmp;
+        if (this._editingIdx === idx) this._editingIdx = idx - 1;
+        else if (this._editingIdx === idx - 1) this._editingIdx = idx;
+        this._fire(); this._buildContent();
+      }.bind(this));
+      item.appendChild(up);
+    }
+
+    // Move down
+    if (idx < total - 1) {
+      var dn = this._iconBtn("down", "Move down");
+      dn.addEventListener("click", function() {
+        var c = this._config.cards;
+        var tmp = c[idx]; c[idx] = c[idx+1]; c[idx+1] = tmp;
+        if (this._editingIdx === idx) this._editingIdx = idx + 1;
+        else if (this._editingIdx === idx + 1) this._editingIdx = idx;
+        this._fire(); this._buildContent();
+      }.bind(this));
+      item.appendChild(dn);
+    }
+
+    // Edit YAML
+    var ed = this._iconBtn("edit", "Edit YAML");
+    if (this._editingIdx === idx) ed.classList.add("active");
+    ed.addEventListener("click", function() {
+      this._editingIdx = (this._editingIdx === idx) ? null : idx;
+      this._buildContent();
+    }.bind(this));
+    item.appendChild(ed);
+
+    // Delete
+    var del = this._iconBtn("delete", "Remove");
+    del.classList.add("danger");
+    del.addEventListener("click", function() {
+      this._config.cards.splice(idx, 1);
+      if (this._editingIdx === idx) this._editingIdx = null;
+      this._fire(); this._buildContent();
+    }.bind(this));
+    item.appendChild(del);
+
+    return item;
+  }
+
+  // ── Inline YAML editor ───────────────────────────────────────────
+  _yamlEditor(idx) {
+    var isNew   = idx === "new";
+    var current = isNew ? { type: "entities", entities: [] } : this._config.cards[idx];
+    var area    = this._el("div", "yaml-area open");
+
+    var ta = document.createElement("textarea");
+    ta.spellcheck = false;
+    ta.placeholder = "type: entities\nentities:\n  - sun.sun";
+    ta.value = toYaml(current);
+    area.appendChild(ta);
+
+    var errEl = this._el("div", "yaml-error");
+    errEl.style.display = "none";
+    area.appendChild(errEl);
+
+    var actions = this._el("div", "yaml-actions");
+
+    var cancelBtn = this._el("button", "yaml-btn");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.addEventListener("click", function() {
+      this._editingIdx = null;
+      this._buildContent();
+    }.bind(this));
+    actions.appendChild(cancelBtn);
+
+    var saveBtn = this._el("button", "yaml-btn primary");
+    saveBtn.textContent = isNew ? "Add Card" : "Save";
+    saveBtn.addEventListener("click", function() {
+      try {
+        errEl.style.display = "none";
+        var parsed = fromYaml(ta.value);
+        if (!parsed.type) throw new Error("Missing required field: type");
+        if (isNew) { this._config.cards.push(parsed); }
+        else        { this._config.cards[idx] = parsed; }
+        this._editingIdx = null;
+        this._fire();
+        this._buildContent();
+      } catch(e) {
+        errEl.textContent = "Error: " + e.message;
+        errEl.style.display = "block";
+      }
+    }.bind(this));
+    actions.appendChild(saveBtn);
+
+    area.appendChild(actions);
+    return area;
+  }
+
+  // ── DOM helpers ──────────────────────────────────────────────────
+  _el(tag, cls) {
+    var el = document.createElement(tag);
+    if (cls) el.className = cls;
+    return el;
+  }
+
+  _sectionTitle(text) {
+    var el = this._el("div", "section-title");
+    el.textContent = text;
+    return el;
+  }
+
+  _fieldWrap(label, control) {
+    var wrap = this._el("div", "nm-field");
+    if (label) {
+      var lbl = document.createElement("label");
+      lbl.textContent = label;
+      wrap.appendChild(lbl);
+    }
+    wrap.appendChild(control);
+    return wrap;
+  }
+
+  _textField(label, key, value, placeholder) {
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = value || "";
+    if (placeholder) inp.placeholder = placeholder;
+    inp.addEventListener("change", function() {
+      this._config[key] = inp.value.trim() || "";
+      this._fire();
+    }.bind(this));
+    return this._fieldWrap(label, inp);
+  }
+
+  _sliderField(label, key, value, min, max) {
+    var wrap = this._el("div", "nm-field");
+    var lbl = document.createElement("label");
+    lbl.textContent = label;
+    wrap.appendChild(lbl);
+
+    var row = this._el("div", "nm-slider-row");
+    var sl  = document.createElement("input");
+    sl.type = "range"; sl.min = min; sl.max = max; sl.value = value;
+    var val = this._el("span", "nm-slider-val");
+    val.textContent = value + "px";
+
+    sl.addEventListener("input", function() {
+      var n = Number(sl.value);
+      this._config[key] = n;
+      val.textContent = n + "px";
+      this._fire();
+    }.bind(this));
+
+    row.appendChild(sl);
+    row.appendChild(val);
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  _toggleRow(label, key, value) {
+    var wrap = this._el("div", "nm-toggle-row");
+    var lbl  = this._el("span", "nm-toggle-label");
+    lbl.textContent = label;
+    wrap.appendChild(lbl);
+
+    var sw    = this._el("label", "nm-switch");
+    var inp   = document.createElement("input");
+    inp.type  = "checkbox";
+    inp.checked = !!value;
+    var track = this._el("span", "track");
+    var thumb = this._el("span", "thumb");
+
+    inp.addEventListener("change", function() {
+      this._config[key] = inp.checked;
+      this._fire();
+      if (key === "collapsible") this._buildContent();
+    }.bind(this));
+
+    sw.appendChild(inp);
+    sw.appendChild(track);
+    sw.appendChild(thumb);
+    wrap.appendChild(sw);
+    return wrap;
+  }
+
+  _iconBtn(icon, title) {
+    var btn = this._el("button", "icon-btn");
+    btn.title = title;
+    btn.innerHTML = svgIcon(icon);
+    return btn;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MAIN CARD ELEMENT
+// ═══════════════════════════════════════════════════════════════════
+class NeumorphicContainerCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._hass   = null;
+    this._cards  = [];
+    this._open   = true;
+  }
+
+  static getConfigElement() {
+    return document.createElement(EDITOR_TAG);
+  }
+
+  static getStubConfig() {
+    return {
+      title: "My Section",
+      icon:  "mdi:home",
+      style: "raised",
+      columns: 1,
+      collapsible: true,
+      cards: [{ type: "entities", entities: ["sun.sun"] }],
+    };
+  }
+
+  setConfig(config) {
+    if (!config.cards || !Array.isArray(config.cards)) {
+      throw new Error("neumorphic-container-card: 'cards' must be a list.");
+    }
+    this._config = {
+      style:        config.style        !== undefined ? config.style        : "raised",
+      title:        config.title        !== undefined ? config.title        : null,
+      icon:         config.icon         !== undefined ? config.icon         : null,
+      padding:      config.padding      !== undefined ? config.padding      : 16,
+      radius:       config.radius       !== undefined ? config.radius       : 16,
+      gap:          config.gap          !== undefined ? config.gap          : 12,
+      columns:      config.columns      !== undefined ? config.columns      : 1,
+      collapsible:  config.collapsible  !== undefined ? config.collapsible  : false,
+      default_open: config.default_open !== undefined ? config.default_open : true,
+      cards:        config.cards,
+    };
+    this._open = this._config.default_open;
+    this._build();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._cards.forEach(function(c) {
+      if (c && "hass" in c) c.hass = hass;
+    });
+  }
+
+  _build() {
+    if (!this._config.cards) return;
+    var cfg  = this._config;
+    var root = this.shadowRoot;
+    root.innerHTML = "";
+
+    var style = document.createElement("style");
+    style.textContent = CARD_STYLES;
+    root.appendChild(style);
+
+    var container = document.createElement("div");
+    container.className = "nm-container style-" + cfg.style;
+    container.style.setProperty("--nm-radius",  cfg.radius  + "px");
+    container.style.setProperty("--nm-padding", cfg.padding + "px");
+    container.style.setProperty("--nm-gap",     cfg.gap     + "px");
+    container.style.setProperty("--nm-cols",    String(cfg.columns || 1));
+
+    // Header
+    if (cfg.title || cfg.icon || cfg.collapsible) {
+      var header = document.createElement("div");
+      header.className = "nm-header" + (cfg.collapsible ? " clickable" : "");
+
+      if (cfg.icon) {
+        var iw = document.createElement("span");
+        iw.className = "nm-header-icon";
+        var haIcon = document.createElement("ha-icon");
+        haIcon.setAttribute("icon", cfg.icon);
+        iw.appendChild(haIcon);
+        header.appendChild(iw);
+      }
+
+      if (cfg.title) {
+        var titleEl = document.createElement("span");
+        titleEl.className = "nm-header-title";
+        titleEl.textContent = cfg.title;
+        header.appendChild(titleEl);
+      }
+
+      if (cfg.collapsible) {
+        var tog = document.createElement("span");
+        tog.className = "nm-header-toggle" + (this._open ? "" : " collapsed");
+        tog.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="' + SVG_PATHS.chevron + '"/></svg>';
+        this._toggleEl = tog;
+        header.appendChild(tog);
+        header.addEventListener("click", this._toggleCollapse.bind(this));
+      }
+
+      container.appendChild(header);
+    }
+
+    // Cards
+    var cardsEl = document.createElement("div");
+    cardsEl.className = "nm-cards" + (this._open ? "" : " collapsed");
+    this._cardsEl = cardsEl;
+
+    this._cards = [];
+    cfg.cards.forEach(function(cardCfg) {
+      var wrap = document.createElement("div");
+      wrap.className = "nm-child-wrap";
+      var card = this._createCard(cardCfg);
+      if (card) {
+        wrap.appendChild(card);
+        this._cards.push(card);
+      }
+      cardsEl.appendChild(wrap);
+    }.bind(this));
+
+    container.appendChild(cardsEl);
+    root.appendChild(container);
+  }
+
+  _createCard(cfg) {
+    var type = cfg.type || "";
+
+    // Custom card
+    if (type.indexOf("custom:") === 0) {
+      var tag = type.slice(7);
+      try {
+        var el = document.createElement(tag);
+        if (el && el.setConfig) {
+          el.setConfig(cfg);
+          if (this._hass) el.hass = this._hass;
+        }
+        return el;
+      } catch(_) {}
+    }
+
+    // Built-in card
+    try {
+      var bi = document.createElement("hui-" + type + "-card");
+      if (bi) {
+        if (bi.setConfig) bi.setConfig(cfg);
+        if (this._hass) bi.hass = this._hass;
+        return bi;
+      }
+    } catch(_) {}
+
+    // Fallback
+    var ph = document.createElement("div");
+    ph.style.cssText = "padding:12px;opacity:.5;font-size:.85rem";
+    ph.textContent = "Card: " + type;
+    return ph;
+  }
+
+  _toggleCollapse() {
+    this._open = !this._open;
+    if (this._cardsEl) this._cardsEl.classList.toggle("collapsed", !this._open);
+    if (this._toggleEl) this._toggleEl.classList.toggle("collapsed", !this._open);
+  }
+
+  getCardSize() {
+    return this._cards.reduce(function(acc, c) {
+      return acc + (c && c.getCardSize ? c.getCardSize() : 1);
+    }, 0);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  REGISTER ELEMENTS
+// ═══════════════════════════════════════════════════════════════════
+if (!customElements.get(EDITOR_TAG)) {
+  customElements.define(EDITOR_TAG, NeumorphicContainerCardEditor);
+}
+if (!customElements.get("neumorphic-container-card")) {
+  customElements.define("neumorphic-container-card", NeumorphicContainerCard);
+}
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type:        "neumorphic-container-card",
+  name:        "Neumorphic Container Card",
+  preview:     false,
+  description: "A neumorphic-styled container that wraps other Lovelace cards.",
+  version:     VERSION,
+});
+
+console.info(
+  "%c NEUMORPHIC-CONTAINER-CARD %c v" + VERSION + " ",
+  "background:#6c8ebf;color:#fff;font-weight:bold;border-radius:4px 0 0 4px;padding:2px 6px",
+  "background:#e0e5ec;color:#44506a;font-weight:bold;border-radius:0 4px 4px 0;padding:2px 6px"
+);
+
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+ * neumorphic-calendar-grid-card.js
+ * ═══════════════════════════════════════════════════════════════════ */
+(function () {
+"use strict";
+"use strict";
+/**
+ * Neumorphic Calendar Grid Card  v1.0
+ * ───────────────────────────────────
+ * A month-grid calendar card for Home Assistant.
+ * Compatible with the Neumorphic theme (etnlbck/hacs-neumorphic-template).
+ *
+ * • Renders a full month grid with the current day highlighted.
+ * • Navigate between months (prev / next / jump-to-today).
+ * • Tap any date to load and display that day's events from one or more
+ *   Home Assistant calendar entities.
+ * • Fully self-contained — no external card dependencies.
+ */
+var _a;
+const DARK_PALETTE = {
+    bg: "#23272e",
+    surface: "#23272e",
+    shadowDark: "#181a1f",
+    shadowLight: "#2c3140",
+    textPrimary: "#e0e0e0",
+    textMuted: "#888c94",
+    textFaint: "#5a606c",
+    gridLine: "rgba(255,255,255,0.05)",
+};
+const LIGHT_PALETTE = {
+    bg: "#e7e5e4",
+    surface: "#e7e5e4",
+    shadowDark: "#c3c1c0",
+    shadowLight: "#ffffff",
+    textPrimary: "#1E2938",
+    textMuted: "#6b7280",
+    textFaint: "#a8a5a3",
+    gridLine: "rgba(0,0,0,0.05)",
+};
+function resolveIsDark(hass) {
+    var _a, _b, _c, _d;
+    if (((_a = hass === null || hass === void 0 ? void 0 : hass.themes) === null || _a === void 0 ? void 0 : _a.darkMode) === true)
+        return true;
+    if (((_b = hass === null || hass === void 0 ? void 0 : hass.themes) === null || _b === void 0 ? void 0 : _b.darkMode) === false)
+        return false;
+    if (document.documentElement.classList.contains("dark"))
+        return true;
+    if (document.documentElement.classList.contains("light"))
+        return false;
+    const cssVar = getComputedStyle(document.documentElement)
+        .getPropertyValue("--primary-background-color").trim();
+    if (cssVar) {
+        const lum = hexLuminance(cssVar);
+        if (lum !== null)
+            return lum < 0.4;
+    }
+    return (_d = (_c = window.matchMedia) === null || _c === void 0 ? void 0 : _c.call(window, "(prefers-color-scheme: dark)").matches) !== null && _d !== void 0 ? _d : true;
+}
+function hexLuminance(hex) {
+    const clean = hex.replace("#", "").trim();
+    let r, g, b;
+    if (clean.length === 3) {
+        r = parseInt(clean[0] + clean[0], 16);
+        g = parseInt(clean[1] + clean[1], 16);
+        b = parseInt(clean[2] + clean[2], 16);
+    }
+    else if (clean.length === 6) {
+        r = parseInt(clean.slice(0, 2), 16);
+        g = parseInt(clean.slice(2, 4), 16);
+        b = parseInt(clean.slice(4, 6), 16);
+    }
+    else {
+        return null;
+    }
+    if (isNaN(r) || isNaN(g) || isNaN(b))
+        return null;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+function hexAlpha(hex, alpha) {
+    const clean = hex.replace("#", "").trim();
+    let r, g, b;
+    if (clean.length === 3) {
+        r = parseInt(clean[0] + clean[0], 16);
+        g = parseInt(clean[1] + clean[1], 16);
+        b = parseInt(clean[2] + clean[2], 16);
+    }
+    else {
+        r = parseInt(clean.slice(0, 2), 16);
+        g = parseInt(clean.slice(2, 4), 16);
+        b = parseInt(clean.slice(4, 6), 16);
+    }
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+function labelVisible(cfg) {
+    if (cfg === undefined)
+        return true;
+    return cfg.show !== false;
+}
+function applyTypography(el, cfg) {
+    if (!cfg)
+        return;
+    if (cfg.font != null)
+        el.style.fontFamily = cfg.font;
+    if (cfg.size != null)
+        el.style.fontSize = cfg.size;
+    if (cfg.color != null)
+        el.style.color = cfg.color;
+    if (cfg.weight != null)
+        el.style.fontWeight = String(cfg.weight);
+    if (cfg.transform != null)
+        el.style.textTransform = cfg.transform;
+    if (cfg.spacing != null)
+        el.style.letterSpacing = cfg.spacing;
+}
+const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+];
+const WD_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WD_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function ymd(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate();
+}
+function isoWeek(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = (t.getUTCDay() + 6) % 7;
+    t.setUTCDate(t.getUTCDate() - dayNum + 3);
+    const firstThu = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+    const ftDay = (firstThu.getUTCDay() + 6) % 7;
+    firstThu.setUTCDate(firstThu.getUTCDate() - ftDay + 3);
+    return 1 + Math.round((t.getTime() - firstThu.getTime()) / (7 * 24 * 3600 * 1000));
+}
+class NeumorphicCalendarGridCard extends HTMLElement {
+    constructor() {
+        super(...arguments);
+        this._hass = null;
+        this._config = null;
+        this._isDark = true;
+        this._viewYear = 0;
+        this._viewMonth = 0;
+        this._selected = null;
+        this._today = new Date();
+        this._themeObserver = null;
+        this._eventsByDay = new Map();
+        this._fetchToken = 0;
+    }
+    connectedCallback() {
+        this._today = new Date();
+        if (this._viewYear === 0) {
+            this._viewYear = this._today.getFullYear();
+            this._viewMonth = this._today.getMonth();
+        }
+        this._isDark = resolveIsDark(this._hass);
+        this._build();
+        this._watchTheme();
+        this._render();
+        this._fetchMonthEvents();
+    }
+    disconnectedCallback() {
+        var _a;
+        (_a = this._themeObserver) === null || _a === void 0 ? void 0 : _a.disconnect();
+        this._themeObserver = null;
+    }
+    setConfig(config) {
+        var _a;
+        const entities = (_a = config.entities) !== null && _a !== void 0 ? _a : (config.entity ? [config.entity] : []);
+        this._config = Object.assign({
+            first_day: "monday",
+            card_size: 340,
+            accent_color: "#006666",
+            event_color: "#006666",
+            show_week_numbers: false,
+            show_agenda: true,
+            display_only: false,
+        }, config, { entities });
+        if (this.shadowRoot) {
+            this._updateStyle();
+            this._render();
+            this._fetchMonthEvents();
+        }
+    }
+    set hass(hass) {
+        const first = this._hass === null;
+        this._hass = hass;
+        this._isDark = resolveIsDark(hass);
+        if (this.shadowRoot) {
+            this._updateStyle();
+            this._render();
+            if (first)
+                this._fetchMonthEvents();
+        }
+    }
+    getCardSize() {
+        var _a;
+        return ((_a = this._config) === null || _a === void 0 ? void 0 : _a.show_agenda) === false ? 5 : 8;
+    }
+    get KS() {
+        var _a, _b;
+        return Math.max(260, Math.min(520, (_b = (_a = this._config) === null || _a === void 0 ? void 0 : _a.card_size) !== null && _b !== void 0 ? _b : 340));
+    }
+    get SCALE() { return this.KS / 340; }
+    _build() {
+        if (this.shadowRoot)
+            return;
+        const shadow = this.attachShadow({ mode: "open" });
+        const style = document.createElement("style");
+        style.id = "neu-style";
+        this._updateStyle(style);
+        const card = document.createElement("ha-card");
+        card.id = "root";
+        const header = document.createElement("div");
+        header.className = "cal-header";
+        header.innerHTML = `
+      <div class="cal-title" id="cal-title"></div>
+      <div class="cal-nav">
+        <button class="nav-btn" id="nav-prev" aria-label="Previous month">${this._chevron("left")}</button>
+        <button class="nav-btn nav-today" id="nav-today" aria-label="Jump to today">${this._dotIcon()}</button>
+        <button class="nav-btn" id="nav-next" aria-label="Next month">${this._chevron("right")}</button>
+      </div>`;
+        const weekRow = document.createElement("div");
+        weekRow.className = "weekday-row";
+        weekRow.id = "weekday-row";
+        const grid = document.createElement("div");
+        grid.className = "cal-grid";
+        grid.id = "cal-grid";
+        const agenda = document.createElement("div");
+        agenda.className = "agenda";
+        agenda.id = "agenda";
+        card.appendChild(header);
+        card.appendChild(weekRow);
+        card.appendChild(grid);
+        card.appendChild(agenda);
+        shadow.appendChild(style);
+        shadow.appendChild(card);
+        header.querySelector("#nav-prev").addEventListener("click", () => this._shiftMonth(-1));
+        header.querySelector("#nav-next").addEventListener("click", () => this._shiftMonth(1));
+        header.querySelector("#nav-today").addEventListener("click", () => this._goToday());
+    }
+    _chevron(dir) {
+        const path = dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6";
+        return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+      stroke-linejoin="round"><path d="${path}"/></svg>`;
+    }
+    _dotIcon() {
+        return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="12" r="4.5"/></svg>`;
+    }
+    _updateStyle(styleEl) {
+        var _a, _b, _c;
+        const el = styleEl !== null && styleEl !== void 0 ? styleEl : (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.getElementById("neu-style");
+        if (!el)
+            return;
+        const p = this._isDark ? DARK_PALETTE : LIGHT_PALETTE;
+        const cfg = this._config;
+        const sc = this.SCALE;
+        const ks = this.KS;
+        const pad = Math.round(20 * sc);
+        const cellR = Math.round(12 * sc);
+        const gap = Math.round(6 * sc);
+        const fsTitle = (15 * sc).toFixed(1);
+        const fsWeekday = (10.5 * sc).toFixed(1);
+        const fsDate = (14 * sc).toFixed(1);
+        const fsAgenda = (12.5 * sc).toFixed(1);
+        const navR = Math.round(34 * sc);
+        const accent = (_b = cfg === null || cfg === void 0 ? void 0 : cfg.accent_color) !== null && _b !== void 0 ? _b : "#006666";
+        const eventColor = (_c = cfg === null || cfg === void 0 ? void 0 : cfg.event_color) !== null && _c !== void 0 ? _c : accent;
+        const noBorder = cfg === null || cfg === void 0 ? void 0 : cfg.no_border;
+        const softOut = `${Math.round(5 * sc)}px ${Math.round(5 * sc)}px ${Math.round(11 * sc)}px ${p.shadowDark}, -${Math.round(5 * sc)}px -${Math.round(5 * sc)}px ${Math.round(11 * sc)}px ${p.shadowLight}`;
+        const softIn = `inset ${Math.round(3 * sc)}px ${Math.round(3 * sc)}px ${Math.round(6 * sc)}px ${p.shadowDark}, inset -${Math.round(3 * sc)}px -${Math.round(3 * sc)}px ${Math.round(6 * sc)}px ${p.shadowLight}`;
+        el.textContent = `
+      :host { display: block; }
+      ha-card {
+        display: flex;
+        flex-direction: column;
+        padding: ${pad}px;
+        box-sizing: border-box;
+        width: 100%;
+        background:    ${noBorder ? "transparent" : `var(--ha-card-background, var(--card-background-color, ${p.bg}))`};
+        border-radius: ${noBorder ? "0" : "var(--ha-card-border-radius, 20px)"};
+        box-shadow:    ${noBorder ? "none" : `var(--ha-card-box-shadow, ${softOut})`};
+        color: ${p.textPrimary};
+        --neu-accent: ${accent};
+        --neu-event: ${eventColor};
+        --neu-surface: ${p.surface};
+        --neu-shadow-dark: ${p.shadowDark};
+        --neu-shadow-light: ${p.shadowLight};
+      }
+      .cal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: ${Math.round(16 * sc)}px;
+      }
+      .cal-title {
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${fsTitle}px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: ${p.textPrimary};
+        white-space: nowrap;
+      }
+      .cal-title .cal-year { color: ${p.textMuted}; font-weight: 400; margin-left: 6px; }
+      .cal-nav { display: flex; gap: ${Math.round(8 * sc)}px; }
+      .nav-btn {
+        width: ${navR}px; height: ${navR}px;
+        display: flex; align-items: center; justify-content: center;
+        border: none; border-radius: 50%;
+        background: ${p.surface};
+        color: ${p.textMuted};
+        box-shadow: ${softOut};
+        cursor: ${(cfg === null || cfg === void 0 ? void 0 : cfg.display_only) ? "default" : "pointer"};
+        transition: box-shadow .12s ease, color .12s ease, transform .05s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .nav-btn:hover { color: ${p.textPrimary}; }
+      .nav-btn:active { box-shadow: ${softIn}; transform: translateY(0.5px); }
+      .nav-btn:focus-visible { outline: 2px solid ${accent}; outline-offset: 2px; }
+      .nav-today { color: ${accent}; }
+      ${(cfg === null || cfg === void 0 ? void 0 : cfg.display_only) ? ".nav-btn { pointer-events: none; }" : ""}
+      .weekday-row {
+        display: grid;
+        grid-template-columns: ${(cfg === null || cfg === void 0 ? void 0 : cfg.show_week_numbers) ? `${Math.round(24 * sc)}px ` : ""}repeat(7, 1fr);
+        gap: ${gap}px;
+        margin-bottom: ${gap}px;
+      }
+      .weekday {
+        text-align: center;
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${fsWeekday}px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: ${p.textFaint};
+        padding: ${Math.round(4 * sc)}px 0;
+      }
+      .wk-corner { }
+      .cal-grid {
+        display: grid;
+        grid-template-columns: ${(cfg === null || cfg === void 0 ? void 0 : cfg.show_week_numbers) ? `${Math.round(24 * sc)}px ` : ""}repeat(7, 1fr);
+        gap: ${gap}px;
+      }
+      .wk-num {
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${(9.5 * sc).toFixed(1)}px;
+        color: ${p.textFaint};
+      }
+      .cell {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        border-radius: ${cellR}px;
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${fsDate}px;
+        color: ${p.textPrimary};
+        cursor: ${(cfg === null || cfg === void 0 ? void 0 : cfg.display_only) ? "default" : "pointer"};
+        transition: box-shadow .12s ease, color .12s ease, background .12s ease;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+      ${(cfg === null || cfg === void 0 ? void 0 : cfg.display_only) ? ".cell { pointer-events: none; }" : ".cell:hover:not(.empty):not(.selected) { box-shadow: " + softOut + "; }"}
+      .cell:focus-visible { outline: 2px solid ${accent}; outline-offset: 1px; }
+      .cell.empty { color: ${p.textFaint}; opacity: 0.4; cursor: default; }
+      .cell.other-month { color: ${p.textFaint}; opacity: 0.45; }
+      .cell.today {
+        color: ${accent};
+        font-weight: 700;
+        box-shadow: ${softIn};
+      }
+      .cell.selected {
+        color: #fff;
+        font-weight: 700;
+        background: ${accent};
+        box-shadow: ${softOut};
+      }
+      .cell.today.selected { color: #fff; }
+      .cell .ev-dots {
+        position: absolute;
+        bottom: ${Math.round(6 * sc)}px;
+        left: 0; right: 0;
+        display: flex; justify-content: center; gap: ${Math.round(3 * sc)}px;
+        height: ${Math.round(4 * sc)}px;
+      }
+      .cell .ev-dot {
+        width: ${Math.round(4 * sc)}px; height: ${Math.round(4 * sc)}px;
+        border-radius: 50%;
+        background: ${eventColor};
+      }
+      .cell.selected .ev-dot { background: rgba(255,255,255,0.85); }
+      .agenda {
+        margin-top: ${Math.round(16 * sc)}px;
+      }
+      .agenda.hidden { display: none; }
+      .agenda-title {
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${(11 * sc).toFixed(1)}px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: ${p.textMuted};
+        margin-bottom: ${Math.round(10 * sc)}px;
+        padding-left: ${Math.round(2 * sc)}px;
+      }
+      .agenda-list { display: flex; flex-direction: column; gap: ${Math.round(8 * sc)}px; }
+      .event {
+        display: flex; align-items: flex-start; gap: ${Math.round(10 * sc)}px;
+        padding: ${Math.round(11 * sc)}px ${Math.round(13 * sc)}px;
+        border-radius: ${Math.round(12 * sc)}px;
+        background: ${p.surface};
+        box-shadow: ${softOut};
+      }
+      .event .ev-bar {
+        width: ${Math.round(3 * sc)}px;
+        align-self: stretch;
+        border-radius: 3px;
+        background: ${eventColor};
+        flex-shrink: 0;
+      }
+      .event .ev-body { flex: 1; min-width: 0; }
+      .event .ev-summary {
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${fsAgenda}px;
+        font-weight: 500;
+        color: ${p.textPrimary};
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .event .ev-time {
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${(10.5 * sc).toFixed(1)}px;
+        color: ${p.textMuted};
+        margin-top: ${Math.round(2 * sc)}px;
+      }
+      .event .ev-loc {
+        font-size: ${(10 * sc).toFixed(1)}px;
+        color: ${p.textFaint};
+        margin-top: ${Math.round(2 * sc)}px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .agenda-empty {
+        font-family: var(--primary-font-family, "Space Mono", monospace);
+        font-size: ${fsAgenda}px;
+        color: ${p.textFaint};
+        padding: ${Math.round(14 * sc)}px ${Math.round(4 * sc)}px;
+        text-align: center;
+      }
+      .agenda-loading {
+        font-size: ${fsAgenda}px;
+        color: ${p.textFaint};
+        padding: ${Math.round(14 * sc)}px ${Math.round(4 * sc)}px;
+        text-align: center;
+      }
+    `;
+    }
+    _watchTheme() {
+        var _a;
+        this._themeObserver = new MutationObserver(() => {
+            const wasDark = this._isDark;
+            this._isDark = resolveIsDark(this._hass);
+            if (this._isDark !== wasDark) {
+                this._updateStyle();
+                this._render();
+            }
+        });
+        this._themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class", "style"],
+        });
+        (_a = window.matchMedia) === null || _a === void 0 ? void 0 : _a.call(window, "(prefers-color-scheme: dark)").addEventListener("change", () => {
+            this._isDark = resolveIsDark(this._hass);
+            this._updateStyle();
+            this._render();
+        });
+    }
+    _shiftMonth(delta) {
+        var _a;
+        if ((_a = this._config) === null || _a === void 0 ? void 0 : _a.display_only)
+            return;
+        let m = this._viewMonth + delta;
+        let y = this._viewYear;
+        while (m < 0) {
+            m += 12;
+            y -= 1;
+        }
+        while (m > 11) {
+            m -= 12;
+            y += 1;
+        }
+        this._viewMonth = m;
+        this._viewYear = y;
+        this._render();
+        this._fetchMonthEvents();
+    }
+    _goToday() {
+        var _a;
+        if ((_a = this._config) === null || _a === void 0 ? void 0 : _a.display_only)
+            return;
+        this._today = new Date();
+        this._viewYear = this._today.getFullYear();
+        this._viewMonth = this._today.getMonth();
+        this._selected = new Date(this._today);
+        this._render();
+        this._fetchMonthEvents();
+    }
+    _selectDate(d) {
+        var _a;
+        if ((_a = this._config) === null || _a === void 0 ? void 0 : _a.display_only)
+            return;
+        this._selected = d;
+        this._render();
+    }
+    async _fetchMonthEvents() {
+        var _a, _b, _c, _d, _e, _f;
+        if (!this._hass || !this._config)
+            return;
+        const entities = (_a = this._config.entities) !== null && _a !== void 0 ? _a : [];
+        if (entities.length === 0) {
+            this._eventsByDay = new Map();
+            this._renderAgenda();
+            return;
+        }
+        const monthStart = new Date(this._viewYear, this._viewMonth, 1);
+        const startOffset = this._leadingBlanks(monthStart);
+        const rangeStart = new Date(this._viewYear, this._viewMonth, 1 - startOffset);
+        const rangeEnd = new Date(rangeStart);
+        rangeEnd.setDate(rangeEnd.getDate() + 42);
+        const token = ++this._fetchToken;
+        const startISO = rangeStart.toISOString();
+        const endISO = rangeEnd.toISOString();
+        const byDay = new Map();
+        try {
+            const results = await Promise.all(entities.map(async (ent) => {
+                try {
+                    const evs = await this._hass.callApi("GET", `calendars/${ent}?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
+                    return (evs || []).map((e) => (Object.assign(Object.assign({}, e), { _entity: ent })));
+                }
+                catch (_a) {
+                    return [];
+                }
+            }));
+            if (token !== this._fetchToken)
+                return;
+            for (const list of results) {
+                for (const ev of list) {
+                    const startStr = (_c = (_b = ev.start) === null || _b === void 0 ? void 0 : _b.dateTime) !== null && _c !== void 0 ? _c : (_d = ev.start) === null || _d === void 0 ? void 0 : _d.date;
+                    if (!startStr)
+                        continue;
+                    const isAllDay = !!((_e = ev.start) === null || _e === void 0 ? void 0 : _e.date) && !((_f = ev.start) === null || _f === void 0 ? void 0 : _f.dateTime);
+                    const d = new Date(startStr);
+                    const key = isAllDay
+                        ? ev.start.date
+                        : ymd(d);
+                    if (!byDay.has(key))
+                        byDay.set(key, []);
+                    byDay.get(key).push(ev);
+                }
+            }
+            for (const list of byDay.values()) {
+                list.sort((a, b) => {
+                    var _a, _b, _c, _d, _e, _f, _g, _h;
+                    const as = (_d = (_b = (_a = a.start) === null || _a === void 0 ? void 0 : _a.dateTime) !== null && _b !== void 0 ? _b : (_c = a.start) === null || _c === void 0 ? void 0 : _c.date) !== null && _d !== void 0 ? _d : "";
+                    const bs = (_h = (_f = (_e = b.start) === null || _e === void 0 ? void 0 : _e.dateTime) !== null && _f !== void 0 ? _f : (_g = b.start) === null || _g === void 0 ? void 0 : _g.date) !== null && _h !== void 0 ? _h : "";
+                    return as < bs ? -1 : as > bs ? 1 : 0;
+                });
+            }
+            this._eventsByDay = byDay;
+            this._renderDots();
+            this._renderAgenda();
+        }
+        catch (_g) {
+            if (token === this._fetchToken) {
+                this._eventsByDay = new Map();
+                this._renderAgenda();
+            }
+        }
+    }
+    _leadingBlanks(monthStart) {
+        var _a;
+        const dow = monthStart.getDay();
+        if (((_a = this._config) === null || _a === void 0 ? void 0 : _a.first_day) === "sunday")
+            return dow;
+        return (dow + 6) % 7;
+    }
+    _render() {
+        var _a, _b;
+        if (!this.shadowRoot || !this._config)
+            return;
+        const sr = this.shadowRoot;
+        const p = this._isDark ? DARK_PALETTE : LIGHT_PALETTE;
+        const titleEl = sr.getElementById("cal-title");
+        if (titleEl) {
+            const vis = labelVisible(this._config.title_label);
+            titleEl.style.display = vis ? "" : "none";
+            if (vis) {
+                const custom = (_b = (_a = this._config.title_label) === null || _a === void 0 ? void 0 : _a.text) !== null && _b !== void 0 ? _b : this._config.title;
+                if (custom) {
+                    titleEl.textContent = custom;
+                }
+                else {
+                    titleEl.innerHTML = `${MONTHS[this._viewMonth]}<span class="cal-year">${this._viewYear}</span>`;
+                }
+                applyTypography(titleEl, this._config.title_label);
+            }
+        }
+        const weekRow = sr.getElementById("weekday-row");
+        if (weekRow) {
+            const names = this._config.first_day === "sunday" ? WD_SUN : WD_MON;
+            let html = this._config.show_week_numbers ? `<div class="weekday wk-corner"></div>` : "";
+            html += names.map((n) => `<div class="weekday">${n}</div>`).join("");
+            weekRow.innerHTML = html;
+            const wds = weekRow.querySelectorAll(".weekday");
+            wds.forEach((el) => { if (this._config.weekday_label)
+                applyTypography(el, this._config.weekday_label); });
+        }
+        this._renderGrid();
+        this._renderAgenda();
+    }
+    _renderGrid() {
+        if (!this.shadowRoot || !this._config)
+            return;
+        const grid = this.shadowRoot.getElementById("cal-grid");
+        if (!grid)
+            return;
+        grid.innerHTML = "";
+        const monthStart = new Date(this._viewYear, this._viewMonth, 1);
+        const blanks = this._leadingBlanks(monthStart);
+        const firstCell = new Date(this._viewYear, this._viewMonth, 1 - blanks);
+        const showWk = this._config.show_week_numbers;
+        for (let row = 0; row < 6; row++) {
+            if (showWk) {
+                const wkDate = new Date(firstCell);
+                wkDate.setDate(wkDate.getDate() + row * 7);
+                const wkEl = document.createElement("div");
+                wkEl.className = "wk-num";
+                wkEl.textContent = String(isoWeek(wkDate));
+                grid.appendChild(wkEl);
+            }
+            for (let col = 0; col < 7; col++) {
+                const idx = row * 7 + col;
+                const d = new Date(firstCell);
+                d.setDate(d.getDate() + idx);
+                const inMonth = d.getMonth() === this._viewMonth;
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                cell.setAttribute("role", "button");
+                cell.setAttribute("tabindex", this._config.display_only ? "-1" : "0");
+                cell.setAttribute("aria-label", d.toDateString());
+                if (!inMonth)
+                    cell.classList.add("other-month");
+                if (sameDay(d, this._today))
+                    cell.classList.add("today");
+                if (this._selected && sameDay(d, this._selected))
+                    cell.classList.add("selected");
+                const num = document.createElement("span");
+                num.className = "date-num";
+                num.textContent = String(d.getDate());
+                if (this._config.date_label)
+                    applyTypography(num, this._config.date_label);
+                cell.appendChild(num);
+                const key = ymd(d);
+                const evs = this._eventsByDay.get(key);
+                if (evs && evs.length) {
+                    const dots = document.createElement("div");
+                    dots.className = "ev-dots";
+                    const n = Math.min(3, evs.length);
+                    for (let i = 0; i < n; i++) {
+                        const dot = document.createElement("span");
+                        dot.className = "ev-dot";
+                        dots.appendChild(dot);
+                    }
+                    cell.appendChild(dots);
+                }
+                const clickDate = new Date(d);
+                cell.addEventListener("click", () => this._selectDate(clickDate));
+                cell.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        this._selectDate(clickDate);
+                    }
+                });
+                grid.appendChild(cell);
+            }
+        }
+    }
+    _renderDots() {
+        this._renderGrid();
+    }
+    _renderAgenda() {
+        var _a, _b, _c;
+        if (!this.shadowRoot || !this._config)
+            return;
+        const agenda = this.shadowRoot.getElementById("agenda");
+        if (!agenda)
+            return;
+        if (this._config.show_agenda === false) {
+            agenda.classList.add("hidden");
+            return;
+        }
+        agenda.classList.remove("hidden");
+        const sel = this._selected;
+        if (!sel) {
+            agenda.innerHTML = `<div class="agenda-empty">Select a day to see events</div>`;
+            return;
+        }
+        const heading = sel.toLocaleDateString(undefined, {
+            weekday: "long", month: "long", day: "numeric",
+        });
+        const custom = (_a = this._config.agenda_label) === null || _a === void 0 ? void 0 : _a.text;
+        let html = `<div class="agenda-title" id="agenda-title">${custom !== null && custom !== void 0 ? custom : heading}</div>`;
+        const key = ymd(sel);
+        const evs = (_b = this._eventsByDay.get(key)) !== null && _b !== void 0 ? _b : [];
+        if (evs.length === 0) {
+            html += `<div class="agenda-empty">No events</div>`;
+        }
+        else {
+            html += `<div class="agenda-list">`;
+            for (const ev of evs) {
+                const summary = this._escape((_c = ev.summary) !== null && _c !== void 0 ? _c : "(no title)");
+                const timeStr = this._eventTimeString(ev);
+                const loc = ev.location ? `<div class="ev-loc">${this._escape(ev.location)}</div>` : "";
+                html += `<div class="event">
+          <div class="ev-bar"></div>
+          <div class="ev-body">
+            <div class="ev-summary">${summary}</div>
+            <div class="ev-time">${timeStr}</div>
+            ${loc}
+          </div>
+        </div>`;
+            }
+            html += `</div>`;
+        }
+        agenda.innerHTML = html;
+        const titleEl = agenda.querySelector("#agenda-title");
+        if (titleEl && this._config.agenda_label)
+            applyTypography(titleEl, this._config.agenda_label);
+    }
+    _eventTimeString(ev) {
+        var _a, _b, _c, _d;
+        const isAllDay = !!((_a = ev.start) === null || _a === void 0 ? void 0 : _a.date) && !((_b = ev.start) === null || _b === void 0 ? void 0 : _b.dateTime);
+        if (isAllDay)
+            return "All day";
+        const s = (_c = ev.start) === null || _c === void 0 ? void 0 : _c.dateTime;
+        const e = (_d = ev.end) === null || _d === void 0 ? void 0 : _d.dateTime;
+        if (!s)
+            return "";
+        const opts = { hour: "numeric", minute: "2-digit" };
+        const sStr = new Date(s).toLocaleTimeString(undefined, opts);
+        if (!e)
+            return sStr;
+        const eStr = new Date(e).toLocaleTimeString(undefined, opts);
+        return `${sStr} – ${eStr}`;
+    }
+    _escape(s) {
+        return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    static getStubConfig() {
+        return {
+            entities: ["calendar.personal"],
+            first_day: "monday",
+            card_size: 340,
+            accent_color: "#006666",
+            event_color: "#006666",
+            show_week_numbers: false,
+            show_agenda: true,
+        };
+    }
+    static getConfigElement() {
+        return document.createElement("neumorphic-calendar-grid-editor");
+    }
+}
+const EDITOR_CSS = `
+  :host { display:block; font-family:var(--paper-font-body1_-_font-family,sans-serif); }
+  .sec-hdr {
+    display:flex; align-items:center; gap:8px;
+    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--secondary-text-color,#8891a0);
+    padding:14px 0 6px; border-bottom:1px solid var(--divider-color,rgba(0,0,0,.08));
+    margin-bottom:10px; cursor:pointer; user-select:none;
+  }
+  .sec-hdr svg { flex-shrink:0; opacity:.55; transition:transform .18s ease; }
+  .sec-hdr.collapsed svg { transform:rotate(-90deg); }
+  .sec-body { margin-bottom:4px; }
+  .sec-body.hidden { display:none; }
+  label { display:block; font-size:12px; color:var(--secondary-text-color,#6b7280); margin-bottom:3px; font-weight:500; }
+  input[type=text],input[type=number],select,textarea {
+    width:100%; padding:8px 10px; border-radius:6px;
+    border:1px solid var(--divider-color,#d1d5db);
+    background:var(--card-background-color,#fff);
+    color:var(--primary-text-color,#111);
+    font-size:13px; box-sizing:border-box; font-family:inherit;
+    transition:border-color .15s;
+  }
+  textarea { min-height:64px; resize:vertical; font-family:monospace; font-size:12px; }
+  input:focus,select:focus,textarea:focus { outline:none; border-color:var(--primary-color,#006666); }
+  .field { margin-bottom:8px; }
+  .row2 { display:flex; gap:8px; margin-bottom:8px; }
+  .row2 > * { flex:1; min-width:0; }
+  .range-wrap { display:flex; align-items:center; gap:8px; }
+  .range-wrap input[type=range] { flex:1; accent-color:var(--primary-color,#006666); }
+  .range-val { font-size:12px; font-weight:700; color:var(--primary-color,#006666); min-width:44px; text-align:right; font-family:monospace; }
+  .tog-row { display:flex; align-items:center; justify-content:space-between; padding:4px 0; margin-bottom:6px; }
+  .tog-row label { margin:0; }
+  .switch { position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; }
+  .switch input { opacity:0; width:0; height:0; }
+  .sw-track { position:absolute; cursor:pointer; inset:0; border-radius:20px; background:var(--divider-color,#ccc); transition:.2s; }
+  .sw-track::before { content:""; position:absolute; height:14px; width:14px; left:3px; bottom:3px; border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  input:checked + .sw-track { background:var(--primary-color,#006666); }
+  input:checked + .sw-track::before { transform:translateX(16px); }
+  .color-field { display:flex; align-items:center; gap:6px; }
+  .color-swatch { width:32px; height:32px; border-radius:6px; flex-shrink:0; border:1px solid var(--divider-color,#d1d5db); cursor:pointer; position:relative; overflow:hidden; }
+  .color-swatch input[type=color] { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px); opacity:0; cursor:pointer; padding:0; border:none; }
+  .color-field input[type=text] { flex:1; font-family:monospace; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .font-hint { font-size:10px; color:var(--secondary-text-color,#8891a0); margin-top:2px; display:block; }
+  ha-entity-picker { display:block; width:100%; margin-bottom:8px; }
+`;
+const FONT_PRESETS = [
+    { v: "", l: "Default (theme)" }, { v: "Space Mono", l: "Space Mono" },
+    { v: "JetBrains Mono", l: "JetBrains Mono" }, { v: "system-ui", l: "System UI" },
+    { v: "Arial", l: "Arial" }, { v: "Georgia", l: "Georgia" }, { v: "Roboto", l: "Roboto" },
+    { v: "Open Sans", l: "Open Sans" }, { v: "Lato", l: "Lato" }, { v: "Montserrat", l: "Montserrat" },
+    { v: "Poppins", l: "Poppins" }, { v: "Inter", l: "Inter" }, { v: "Oswald", l: "Oswald" },
+    { v: "Bebas Neue", l: "Bebas Neue" }, { v: "Outfit", l: "Outfit" }, { v: "Nunito", l: "Nunito" },
+    { v: "Quicksand", l: "Quicksand" }, { v: "__custom__", l: "✏ Custom…" },
+];
+const WEB_SAFE = new Set(["", "system-ui", "Arial", "Georgia", "monospace", "serif", "sans-serif"]);
+class NeumorphicCalendarGridCardEditor extends HTMLElement {
+    constructor() {
+        super(...arguments);
+        this._hass = null;
+        this._config = {};
+        this._sections = {};
+        this._built = false;
+    }
+    set hass(hass) {
+        var _a;
+        this._hass = hass;
+        (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelectorAll("ha-entity-picker").forEach((el) => { el.hass = hass; });
+    }
+    setConfig(config) {
+        this._config = Object.assign({}, config);
+        if (!this._built) {
+            this.attachShadow({ mode: "open" });
+            this._built = true;
+        }
+        this._render();
+    }
+    _get(path, fb = "") {
+        var _a;
+        return (_a = path.split(".").reduce((o, k) => (o != null && typeof o === "object") ? o[k] : undefined, this._config)) !== null && _a !== void 0 ? _a : fb;
+    }
+    _set(path, value) {
+        const parts = path.split(".");
+        let cur = this._config;
+        for (let i = 0; i < parts.length - 1; i++) {
+            if (cur[parts[i]] == null || typeof cur[parts[i]] !== "object")
+                cur[parts[i]] = {};
+            cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = value;
+        this._fire();
+    }
+    _fire() {
+        this.dispatchEvent(new CustomEvent("config-changed", {
+            detail: { config: Object.assign({}, this._config) },
+            bubbles: true, composed: true,
+        }));
+    }
+    _loadFont(family) {
+        if (!family || WEB_SAFE.has(family))
+            return;
+        const id = `gfont-${family.replace(/\s+/g, "-")}`;
+        if (document.getElementById(id))
+            return;
+        const link = Object.assign(document.createElement("link"), {
+            id, rel: "stylesheet",
+            href: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@300;400;500;600;700;900&display=swap`,
+        });
+        document.head.appendChild(link);
+    }
+    _toggleSection(id) {
+        var _a, _b;
+        this._sections[id] = !this._sections[id];
+        (_a = this.shadowRoot.querySelector(`[data-sec="${id}"]`)) === null || _a === void 0 ? void 0 : _a.classList.toggle("collapsed", !!this._sections[id]);
+        (_b = this.shadowRoot.querySelector(`[data-secbody="${id}"]`)) === null || _b === void 0 ? void 0 : _b.classList.toggle("hidden", !!this._sections[id]);
+    }
+    _sec(id, title, body) {
+        const c = !!this._sections[id];
+        return `<div class="sec-hdr${c ? " collapsed" : ""}" data-sec="${id}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+      ${title}</div>
+      <div class="sec-body${c ? " hidden" : ""}" data-secbody="${id}">${body}</div>`;
+    }
+    _text(path, lbl, ph = "") {
+        return `<div class="field"><label>${lbl}</label>
+      <input type="text" data-path="${path}" value="${String(this._get(path, "")).replace(/"/g, "&quot;")}" placeholder="${ph}">
+    </div>`;
+    }
+    _range(path, lbl, min, max, step, suffix = "", def = min) {
+        const v = Number(this._get(path, def));
+        return `<div class="field"><label>${lbl}</label>
+      <div class="range-wrap">
+        <input type="range" data-path="${path}" value="${v}" min="${min}" max="${max}" step="${step}" data-suffix="${suffix}">
+        <span class="range-val" data-rv="${path}">${v}${suffix}</span>
+      </div></div>`;
+    }
+    _select(path, lbl, opts) {
+        const cur = String(this._get(path, opts[0].value));
+        return `<div class="field"><label>${lbl}</label>
+      <select data-path="${path}">${opts.map((o) => `<option value="${o.value}"${cur === o.value ? " selected" : ""}>${o.label}</option>`).join("")}</select>
+    </div>`;
+    }
+    _toggle(path, lbl, def = false) {
+        return `<div class="tog-row"><label>${lbl}</label>
+      <label class="switch"><input type="checkbox" data-path="${path}"${Boolean(this._get(path, def)) ? " checked" : ""}><span class="sw-track"></span></label>
+    </div>`;
+    }
+    _color(path, lbl, def = "#006666") {
+        let raw = String(this._get(path, "") || def);
+        if (!raw.startsWith("#"))
+            raw = def;
+        if (!/^#[0-9a-fA-F]{6}$/i.test(raw))
+            raw = def;
+        return `<div class="field"><label>${lbl}</label>
+      <div class="color-field" data-colorpath="${path}">
+        <div class="color-swatch" style="background:${raw}"><input type="color" value="${raw}"></div>
+        <input type="text" class="color-hex" value="${raw.toUpperCase()}" placeholder="#RRGGBB" maxlength="7">
+      </div></div>`;
+    }
+    _font(path, lbl) {
+        const cur = String(this._get(path, ""));
+        const isC = cur !== "" && !FONT_PRESETS.find((p) => p.v === cur && p.v !== "__custom__");
+        const sel = isC ? "__custom__" : cur;
+        return `<div class="field"><label>${lbl}</label>
+      <select data-path="${path}" data-font-sel>
+        ${FONT_PRESETS.map((p) => `<option value="${p.v}"${sel === p.v ? " selected" : ""}>${p.l}</option>`).join("")}
+      </select>
+      <input type="text" data-path="${path}" data-font-custom placeholder="e.g. Dancing Script"
+        style="${isC ? "" : "display:none"}" value="${isC ? cur : ""}">
+      <small class="font-hint">Google Fonts load automatically when selected.</small>
+    </div>`;
+    }
+    _labelBlock(prefix, hasText = true) {
+        return `
+      ${this._toggle(`${prefix}.show`, "Visible", true)}
+      ${hasText ? this._text(`${prefix}.text`, "Text override", "blank = auto") : ""}
+      <div class="row2">
+        ${this._text(`${prefix}.size`, "Size (e.g. 14px)", "14px")}
+        ${this._select(`${prefix}.weight`, "Weight", [
+            { value: "300", label: "300" }, { value: "400", label: "400" }, { value: "500", label: "500" },
+            { value: "600", label: "600" }, { value: "700", label: "700" }, { value: "900", label: "900" },
+        ])}
+      </div>
+      ${this._font(`${prefix}.font`, "Font family")}
+      ${this._color(`${prefix}.color`, "Color", "#1E2938")}`;
+    }
+    _render() {
+        var _a;
+        const sr = this.shadowRoot;
+        const entitiesVal = Array.isArray(this._config.entities)
+            ? this._config.entities.join("\n")
+            : ((_a = this._config.entity) !== null && _a !== void 0 ? _a : "");
+        const html = `
+    ${this._sec("entity", "📅 Calendar Entities", `
+      <div class="field">
+        <label>Calendar entities (one per line)</label>
+        <textarea data-path="__entities__" placeholder="calendar.personal&#10;calendar.work">${String(entitiesVal).replace(/</g, "&lt;")}</textarea>
+        <small class="font-hint">e.g. calendar.personal — add several to merge them.</small>
+      </div>
+    `)}
+    ${this._sec("layout", "📐 Layout", `
+      ${this._range("card_size", "Card width (px)", 260, 520, 10, "px", 340)}
+      ${this._select("first_day", "Week starts on", [
+            { value: "monday", label: "Monday" }, { value: "sunday", label: "Sunday" },
+        ])}
+      ${this._toggle("show_week_numbers", "Show week numbers")}
+      ${this._toggle("show_agenda", "Show agenda panel", true)}
+      ${this._toggle("no_border", "No border / transparent background")}
+      ${this._toggle("display_only", "Display only — no interaction")}
+    `)}
+    ${this._sec("colors", "🎨 Colours", `
+      ${this._color("accent_color", "Accent (today / selected)", "#006666")}
+      ${this._color("event_color", "Event colour", "#006666")}
+    `)}
+    ${this._sec("title_lbl", "𝗔 Title Label", this._labelBlock("title_label", true))}
+    ${this._sec("weekday_lbl", "ᴬ Weekday Labels", this._labelBlock("weekday_label", false))}
+    ${this._sec("date_lbl", "# Date Numbers", this._labelBlock("date_label", false))}
+    ${this._sec("agenda_lbl", "≡ Agenda Heading", this._labelBlock("agenda_label", true))}
+    `;
+        const style = document.createElement("style");
+        style.textContent = EDITOR_CSS;
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        div.querySelectorAll('textarea[data-path="__entities__"]').forEach((el) => {
+            el.addEventListener("change", () => {
+                const arr = el.value.split("\n").map((s) => s.trim()).filter(Boolean);
+                this._config.entities = arr;
+                delete this._config.entity;
+                this._fire();
+            });
+        });
+        div.querySelectorAll("input[type=text][data-path]:not(.color-hex):not([data-font-custom])").forEach((el) => {
+            el.addEventListener("change", () => {
+                let v = el.value;
+                if (typeof v === "string" && el.dataset.path.endsWith(".size")) {
+                    if (v !== "" && /^\d+(\.\d+)?$/.test(v))
+                        v = v + "px";
+                }
+                this._set(el.dataset.path, v === "" ? undefined : v);
+                this._render();
+            });
+        });
+        div.querySelectorAll("select[data-path]").forEach((sel) => {
+            sel.addEventListener("change", () => {
+                if (sel.dataset.fontSel !== undefined) {
+                    const ci = sel.nextElementSibling;
+                    if (sel.value === "__custom__") {
+                        ci.style.display = "";
+                        ci.focus();
+                        return;
+                    }
+                    if (ci)
+                        ci.style.display = "none";
+                    if (sel.value)
+                        this._loadFont(sel.value);
+                }
+                this._set(sel.dataset.path, sel.value === "" ? undefined : sel.value);
+                this._render();
+            });
+        });
+        div.querySelectorAll("input[data-font-custom]").forEach((el) => {
+            el.addEventListener("change", () => {
+                if (el.value.trim())
+                    this._loadFont(el.value.trim());
+                this._set(el.dataset.path, el.value.trim() || undefined);
+                this._render();
+            });
+        });
+        div.querySelectorAll("input[type=checkbox][data-path]").forEach((el) => {
+            el.addEventListener("change", () => { this._set(el.dataset.path, el.checked); this._render(); });
+        });
+        div.querySelectorAll("input[type=range][data-path]").forEach((el) => {
+            el.addEventListener("input", () => {
+                const rv = div.querySelector(`[data-rv="${el.dataset.path}"]`);
+                if (rv)
+                    rv.textContent = el.value + (el.dataset.suffix || "");
+            });
+            el.addEventListener("change", () => { this._set(el.dataset.path, Number(el.value)); this._render(); });
+        });
+        div.querySelectorAll(".color-field[data-colorpath]").forEach((field) => {
+            const path = field.dataset.colorpath;
+            const native = field.querySelector("input[type=color]");
+            const swatch = field.querySelector(".color-swatch");
+            const text = field.querySelector("input.color-hex");
+            native.addEventListener("input", () => { swatch.style.background = native.value; text.value = native.value.toUpperCase(); });
+            native.addEventListener("change", () => { this._set(path, native.value); this._render(); });
+            text.addEventListener("input", () => {
+                let v = text.value.trim();
+                if (!v.startsWith("#"))
+                    v = "#" + v;
+                if (/^#[0-9a-fA-F]{6}$/i.test(v)) {
+                    swatch.style.background = v;
+                    native.value = v;
+                }
+            });
+            text.addEventListener("change", () => {
+                let v = text.value.trim();
+                if (!v.startsWith("#"))
+                    v = "#" + v;
+                if (/^#[0-9a-fA-F]{6}$/i.test(v)) {
+                    this._set(path, v);
+                    this._render();
+                }
+            });
+        });
+        div.querySelectorAll(".sec-hdr[data-sec]").forEach((el) => {
+            el.addEventListener("click", () => this._toggleSection(el.dataset.sec));
+        });
+        sr.innerHTML = "";
+        sr.appendChild(style);
+        sr.appendChild(div);
+    }
+}
+customElements.define("neumorphic-calendar-grid-editor", NeumorphicCalendarGridCardEditor);
+customElements.define("neumorphic-calendar-grid-card", NeumorphicCalendarGridCard);
+window.customCards = (_a = window.customCards) !== null && _a !== void 0 ? _a : [];
+window.customCards.push({
+    type: "neumorphic-calendar-grid-card",
+    name: "Neumorphic Calendar Grid",
+    description: "Month-grid calendar with today highlight, navigation, and tap-for-events — Neumorphic theme",
+    preview: true,
+});
+
+})();

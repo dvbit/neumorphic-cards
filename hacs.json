@@ -1,6 +1,6 @@
 {
   "name": "Neumorphic Cards",
-  "filename": "neumorphic-button-card.js",
+  "filename": "neumorphic-cards.js",
   "render_readme": true,
   "homeassistant": "2023.9.0"
 }
