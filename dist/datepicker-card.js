@@ -17,8 +17,23 @@
    SHARED EDITOR BASE  (identical to timepicker-card.js)
 ───────────────────────────────────────────────────── */
 class NeuCardEditorBase extends HTMLElement {
-  constructor(){super();this.attachShadow({mode:"open"});this._config={};}
+  constructor(){super();this.attachShadow({mode:"open"});this._config={};this._hass=null;}
   setConfig(c){this._config=JSON.parse(JSON.stringify(c));this._render();}
+  set hass(h){
+    const first=!this._hass;
+    this._hass=h;
+    const ep=this.shadowRoot&&this.shadowRoot.getElementById("entity_picker");
+    if(ep)ep.hass=h;
+    if(first&&this.shadowRoot&&this.shadowRoot.childNodes.length)this._render();
+  }
+  _entityPicker(placeholder,domain){
+    const v=this._get("entity");
+    if(customElements.get("ha-entity-picker")){
+      const inc=domain?` include-domains='["${domain}"]'`:"";
+      return `<ha-entity-picker id="entity_picker" data-path="entity" .value="${v}" value="${v}"${inc} allow-custom-entity></ha-entity-picker>`;
+    }
+    return this._inp("entity",placeholder);
+  }
   _fire(){this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true}));}
   _set(path,value){const parts=path.split(".");let obj=this._config;while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}obj[parts[0]]=value;this._fire();this._render();}
   _get(path,def=""){const parts=path.split(".");let obj=this._config;for(const k of parts){if(obj==null)return def;obj=obj[k];}return obj??def;}
@@ -50,9 +65,16 @@ class NeuCardEditorBase extends HTMLElement {
     input[type=color]+input[type=text]{flex:1;}
     input[type=number]{-moz-appearance:textfield;}
     .hint{font-size:.68rem;color:#aab8cc;margin-top:-4px;grid-column:1/-1;}
+    ha-entity-picker{display:block;width:100%;}
   </style>`;}
   _bindInputs(){
+    const ep=this.shadowRoot.getElementById("entity_picker");
+    if(ep){
+      ep.hass=this._hass;
+      ep.addEventListener("value-changed",e=>{this._set("entity",e.detail.value);});
+    }
     this.shadowRoot.querySelectorAll("[data-path]").forEach(el=>{
+      if(el.id==="entity_picker")return;
       const update=e=>{
         const val=el.type==="checkbox"?String(el.checked):el.value;
         this._set(e.target.dataset.path,val);
@@ -334,7 +356,7 @@ class DatepickerCardEditor extends NeuCardEditorBase {
       ${this._editorCSS()}
       <div class="editor">
         ${this._section("Entity & Year Range",
-          this._row("Entity",      this._inp("entity","input_datetime.my_date")),
+          this._row("Entity",      this._entityPicker("input_datetime.my_date","input_datetime")),
           this._row("Year Min",    this._inp("year_min",y-2,"number")),
           this._row("Year Max",    this._inp("year_max",y+10,"number")),
           this._row("Hide Border", `<input type="checkbox" data-path="hide_border"${this._get("hide_border")==="true"||this._get("hide_border")===true?" checked":""}/>`),

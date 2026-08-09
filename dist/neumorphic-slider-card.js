@@ -697,7 +697,17 @@ class NeumorphicSliderCardEditor extends HTMLElement {
     this._hass   = null;
   }
 
-  set hass(hass) { this._hass = hass; }
+  set hass(hass) {
+    const firstHass = !this._hass;
+    this._hass = hass;
+    if (!this.shadowRoot) return;
+    // Keep a live ha-entity-picker fed with hass.
+    const ep = this.shadowRoot.getElementById("entity_picker");
+    if (ep) ep.hass = hass;
+    // On the first hass assignment, re-render so the entity-driven attribute
+    // dropdown can populate from the now-available entity states.
+    if (firstHass && this._config && this._config.entity) this._render();
+  }
 
   setConfig(config) {
     this._config = { ...config };
@@ -882,6 +892,9 @@ class NeumorphicSliderCardEditor extends HTMLElement {
           display: flex; align-items: center; gap: 6px;
         }
         details > summary::before { content: "▶"; font-size: 0.55rem; transition: transform 0.2s; }
+
+        /* ── ha-entity-picker inside a row ── */
+        ha-entity-picker { display: block; width: 100%; }
         details[open] > summary::before { transform: rotate(90deg); }
       </style>
 
@@ -889,8 +902,8 @@ class NeumorphicSliderCardEditor extends HTMLElement {
 
         <!-- ══ ENTITY ══ -->
         <div class="section">Entity</div>
-        ${row("Entity *",        txt("entity",    this._v("entity"),    "light.living_room"))}
-        ${row("Attribute",       txt("attribute", this._v("attribute"), "brightness (optional)"))}
+        ${row("Entity *",        this._entityPicker(txt))}
+        ${row("Attribute",       this._attributeSelect(txt))}
         ${row("Service",         txt("service",   this._v("service"),   "light.turn_on (optional)"))}
         ${row("Service data key",txt("service_data_key", this._v("service_data_key"), "brightness_pct"))}
         <div class="row">
@@ -1090,12 +1103,78 @@ class NeumorphicSliderCardEditor extends HTMLElement {
     return (v ?? "").toString().replace(/"/g, "&quot;");
   }
 
+  /* ── entity picker: native ha-entity-picker if available, else text ── */
+  _entityPicker(txt) {
+    const v = this._v("entity");
+    if (customElements.get("ha-entity-picker")) {
+      return `<ha-entity-picker id="entity_picker" data-path="entity" .value="${this._esc(v)}" value="${this._esc(v)}" allow-custom-entity></ha-entity-picker>`;
+    }
+    return txt("entity", v, "light.living_room");
+  }
+
+  /* ── attribute select: options driven by the selected entity's attributes ── */
+  _attributeSelect(txt) {
+    const ent = this._v("entity");
+    const cur = this._v("attribute");
+    const stateObj = ent && this._hass ? this._hass.states[ent] : null;
+    const attrs = stateObj ? Object.keys(stateObj.attributes).sort() : [];
+    if (!attrs.length) {
+      // No entity chosen (or hass not ready) — fall back to free text.
+      return txt("attribute", cur, "brightness (optional)");
+    }
+    // If the current value isn't among the entity's attributes, keep it as a custom option.
+    const hasCustom = cur && !attrs.includes(cur);
+    const opts = [`<option value=""${cur === "" ? " selected" : ""}>(state — no attribute)</option>`]
+      .concat(attrs.map(a => `<option value="${this._esc(a)}"${a === cur ? " selected" : ""}>${a}</option>`));
+    if (hasCustom) opts.push(`<option value="${this._esc(cur)}" selected>${this._esc(cur)} (custom)</option>`);
+    return `<select id="attribute">${opts.join("")}</select>`;
+  }
+
   _attachEditorEvents() {
     const root = this.shadowRoot;
 
+    /* ── entity picker (ha-entity-picker) or text fallback ── */
+    const entPicker = root.getElementById("entity_picker");
+    if (entPicker) {
+      entPicker.hass = this._hass;
+      entPicker.addEventListener("value-changed", (e) => {
+        const v = e.detail.value;
+        // Changing the entity means its attribute set changes — clear a now-invalid
+        // attribute and re-render so the attribute dropdown rebuilds.
+        const next = { ...this._config };
+        if (v) next.entity = v; else delete next.entity;
+        const stateObj = v && this._hass ? this._hass.states[v] : null;
+        if (next.attribute && (!stateObj || !(next.attribute in stateObj.attributes))) {
+          delete next.attribute;
+        }
+        this._fire(next);
+        this._render();
+      });
+    } else {
+      // Text fallback for entity when ha-entity-picker is unavailable.
+      const entText = root.getElementById("entity");
+      if (entText) {
+        const h = () => { this._set("entity", entText.value.trim() || undefined); this._render(); };
+        entText.addEventListener("change", h);
+        entText.addEventListener("keydown", e => { if (e.key === "Enter") h(); });
+      }
+    }
+
+    /* ── attribute: <select> (driven by entity) or text fallback ── */
+    const attrEl = root.getElementById("attribute");
+    if (attrEl) {
+      const h = () => {
+        const v = (attrEl.value ?? "").toString().trim();
+        this._set("attribute", v === "" ? undefined : v);
+      };
+      attrEl.addEventListener("change", h);
+      if (attrEl.tagName === "INPUT")
+        attrEl.addEventListener("keydown", e => { if (e.key === "Enter") h(); });
+    }
+
     /* ── text / number inputs ── */
     const textIds = [
-      "entity","attribute","service","service_data_key",
+      "service","service_data_key",
       "label_main","label_minor","icon","unit","label_min","label_max",
       "min","max","step",
       "track_length","track_thickness","track_radius",
