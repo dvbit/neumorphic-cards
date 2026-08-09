@@ -35,20 +35,20 @@ const C_DARK = {
     discFrom: "#262b33", discTo: "#1f232a",
 };
 const C_LIGHT = {
-    bg: "#eef0f3", surface: "#eef0f3",
-    shadowDark: "#cbced4", shadowLight: "#ffffff",
-    textPrimary: "#3a4250", textSecondary: "#9aa3b0", textFaint: "#b9c0ca",
-    discFrom: "#ffffff", discTo: "#f2f4f7",
+    bg: "#eef1f4", surface: "#eef1f4",
+    shadowDark: "#d5d8dd", shadowLight: "#ffffff",
+    textPrimary: "#8a929e", textSecondary: "#aeb5c0", textFaint: "#c3c9d2",
+    discFrom: "#fbfcfd", discTo: "#f4f6f8",
 };
 
-// Cold → warm gradient stops for the ring.
+// Cold → warm gradient stops for the ring (soft pastel, matching the reference).
 const RING_STOPS = [
-    { off: 0.00, col: "#4aa3df" }, // cold blue
-    { off: 0.22, col: "#57c9c2" }, // cyan
-    { off: 0.44, col: "#8bd07a" }, // green
-    { off: 0.62, col: "#f2c14e" }, // yellow
-    { off: 0.80, col: "#ef9d4e" }, // orange
-    { off: 1.00, col: "#e2685f" }, // warm red
+    { off: 0.00, col: "#a9d4e6" }, // pale blue
+    { off: 0.24, col: "#b7ddd4" }, // soft blue-green
+    { off: 0.48, col: "#cfdcc0" }, // muted green-grey
+    { off: 0.66, col: "#efd9ad" }, // pale sand
+    { off: 0.84, col: "#eec5a3" }, // soft peach
+    { off: 1.00, col: "#e6b3a6" }, // muted salmon
 ];
 
 // HVAC mode → icon (MDI path data, inlined so no icon dependency).
@@ -119,6 +119,7 @@ class NeumorphicClimateCard extends HTMLElement {
             show_fan: true,
             show_swing: true,
             show_humidity: true,
+            show_status_pill: true,
             show_unit_toggle: false,
             display_only: false,
         }, config);
@@ -161,10 +162,10 @@ class NeumorphicClimateCard extends HTMLElement {
     }
     get SCALE() { return this.KS / 320; }
 
-    // The ring spans 300°, centred at top, leaving a 60° gap at the bottom.
-    get ARC_START() { return -150; }  // degrees from 12 o'clock
-    get ARC_END() { return 150; }
-    get ARC_SPAN() { return this.ARC_END - this.ARC_START; } // 300
+    // The ring spans 330°, centred at top, leaving a small 30° gap at the bottom.
+    get ARC_START() { return -165; }  // degrees from 12 o'clock
+    get ARC_END() { return 165; }
+    get ARC_SPAN() { return this.ARC_END - this.ARC_START; } // 330
 
     // ── State helpers ─────────────────────────────────────────────────────────
     get _stateObj() {
@@ -208,6 +209,7 @@ class NeumorphicClimateCard extends HTMLElement {
         <div class="action" id="c-action"></div>
       </div>
       <div class="dial-wrap" id="dial-wrap"></div>
+      <div class="status-pill" id="status-pill"></div>
       <div class="unit-toggle" id="unit-toggle"></div>
       <div class="controls" id="controls"></div>`;
         shadow.appendChild(style);
@@ -265,6 +267,29 @@ class NeumorphicClimateCard extends HTMLElement {
 
       .unit-toggle { display:flex; justify-content:center; gap:${Math.round(6*sc)}px; margin-bottom:${Math.round(12*sc)}px; }
       .unit-toggle.hidden { display:none; }
+
+      .status-pill { display:flex; justify-content:center; margin:${Math.round(2*sc)}px 0 ${Math.round(14*sc)}px; }
+      .status-pill.hidden { display:none; }
+      .pill {
+        display:inline-flex; align-items:center; gap:${Math.round(7*sc)}px;
+        font-family:var(--primary-font-family,"Space Mono",monospace);
+        font-size:${(10.5*sc).toFixed(1)}px; font-weight:600; letter-spacing:0.04em;
+        color:#fff; border-radius:${Math.round(20*sc)}px;
+        padding:${Math.round(7*sc)}px ${Math.round(14*sc)}px;
+        box-shadow:0 ${Math.round(4*sc)}px ${Math.round(10*sc)}px rgba(0,0,0,0.14);
+        -webkit-tap-highlight-color:transparent;
+        cursor:${cfg.display_only ? "default" : "pointer"};
+        transition:transform .06s ease, filter .12s ease;
+      }
+      .pill:active { transform:translateY(0.5px); }
+      .pill svg { width:${Math.round(14*sc)}px; height:${Math.round(14*sc)}px; fill:#fff; }
+      .pill.off { background:${p.textFaint}; color:#fff; }
+      .pill.idle { background:#8bbf82; }
+      .pill.heating { background:#e08a6f; }
+      .pill.cooling { background:#5aa9d6; }
+      .pill.drying { background:#e6c05a; }
+      .pill.fan { background:#5cc3bc; }
+      ${cfg.display_only ? ".pill{pointer-events:none;}" : ""}
       .unit-btn { font-family:var(--primary-font-family,"Space Mono",monospace); font-size:${(11*sc).toFixed(1)}px; font-weight:600; color:${p.textFaint}; background:${p.surface}; border:none; border-radius:${Math.round(9*sc)}px; padding:${Math.round(5*sc)}px ${Math.round(11*sc)}px; cursor:pointer; box-shadow:${softOutSm}; -webkit-tap-highlight-color:transparent; }
       .unit-btn.on { color:${p.textPrimary}; box-shadow:${softIn}; }
 
@@ -363,6 +388,7 @@ class NeumorphicClimateCard extends HTMLElement {
         }
 
         this._renderDial();
+        this._renderStatusPill();
         this._renderUnitToggle();
         this._renderControls();
     }
@@ -375,8 +401,8 @@ class NeumorphicClimateCard extends HTMLElement {
         const sc = this.SCALE;
         const S = 320; // internal viewBox units
         const cx = S / 2, cy = S / 2;
-        const ringR = 132;
-        const discR = 108;
+        const ringR = 138;
+        const discR = 118;
         const a0 = this.ARC_START, a1 = this.ARC_END, span = this.ARC_SPAN;
 
         const lo = this._minTemp, hi = this._maxTemp;
@@ -417,38 +443,33 @@ class NeumorphicClimateCard extends HTMLElement {
           <linearGradient id="${uid}-ring" x1="0%" y1="0%" x2="100%" y2="100%">
             ${RING_STOPS.map(st => `<stop offset="${(st.off*100).toFixed(0)}%" stop-color="${st.col}"/>`).join("")}
           </linearGradient>
-          <radialGradient id="${uid}-disc" cx="38%" cy="34%" r="80%">
+          <radialGradient id="${uid}-disc" cx="40%" cy="36%" r="82%">
             <stop offset="0%" stop-color="${p.discFrom}"/>
             <stop offset="100%" stop-color="${p.discTo}"/>
           </radialGradient>
           <filter id="${uid}-out" x="-40%" y="-40%" width="180%" height="180%">
-            <feDropShadow dx="${5}" dy="${5}" stdDeviation="${9}" flood-color="${p.shadowDark}" flood-opacity="0.9"/>
-            <feDropShadow dx="${-5}" dy="${-5}" stdDeviation="${9}" flood-color="${p.shadowLight}" flood-opacity="0.9"/>
+            <feDropShadow dx="${3}" dy="${4}" stdDeviation="${7}" flood-color="${p.shadowDark}" flood-opacity="0.55"/>
+            <feDropShadow dx="${-3}" dy="${-3}" stdDeviation="${6}" flood-color="${p.shadowLight}" flood-opacity="0.9"/>
           </filter>
-          <filter id="${uid}-hout" x="-80%" y="-80%" width="260%" height="260%">
-            <feDropShadow dx="${2}" dy="${2}" stdDeviation="${3}" flood-color="${p.shadowDark}" flood-opacity="0.8"/>
-            <feDropShadow dx="${-2}" dy="${-2}" stdDeviation="${3}" flood-color="${p.shadowLight}" flood-opacity="0.9"/>
+          <filter id="${uid}-hout" x="-120%" y="-120%" width="340%" height="340%">
+            <feDropShadow dx="${1}" dy="${1.5}" stdDeviation="${2.2}" flood-color="${p.shadowDark}" flood-opacity="0.55"/>
           </filter>
         </defs>
 
-        <!-- track groove -->
-        <path d="${trackPath}" fill="none" stroke="${p.shadowDark}" stroke-opacity="0.35"
-              stroke-width="10" stroke-linecap="round" transform="translate(0.6,0.6)"/>
-        <path d="${trackPath}" fill="none" stroke="${p.shadowLight}" stroke-opacity="0.5"
-              stroke-width="10" stroke-linecap="round" transform="translate(-0.6,-0.6)"/>
-        <!-- colour ring -->
+        <!-- faint recessed track under the ring -->
+        <path d="${trackPath}" fill="none" stroke="${p.shadowDark}" stroke-opacity="0.30"
+              stroke-width="3.5" stroke-linecap="round"/>
+        <!-- colour ring (thin, pale) -->
         <path d="${trackPath}" fill="none" stroke="url(#${uid}-ring)"
-              stroke-width="7" stroke-linecap="round"/>
+              stroke-width="3.5" stroke-linecap="round"/>
 
-        <!-- raised disc -->
+        <!-- gently raised disc -->
         <circle cx="${cx}" cy="${cy}" r="${discR}" fill="url(#${uid}-disc)" filter="url(#${uid}-out)"/>
 
-        <!-- draggable handle -->
+        <!-- draggable handle: solid white circle -->
         <g class="handle" id="dial-handle">
-          <circle cx="${handle.x.toFixed(2)}" cy="${handle.y.toFixed(2)}" r="13"
-                  fill="${p.surface}" filter="url(#${uid}-hout)"/>
-          <circle cx="${handle.x.toFixed(2)}" cy="${handle.y.toFixed(2)}" r="4.5"
-                  fill="none" stroke="${p.textFaint}" stroke-width="1.4"/>
+          <circle cx="${handle.x.toFixed(2)}" cy="${handle.y.toFixed(2)}" r="9.5"
+                  fill="#ffffff" filter="url(#${uid}-hout)"/>
         </g>
       </svg>
       <div class="dial-center">${centerHTML}</div>`;
@@ -459,6 +480,42 @@ class NeumorphicClimateCard extends HTMLElement {
             const down = (e) => this._onDown(e, svg, cx, cy);
             svg.addEventListener("mousedown", down);
             svg.addEventListener("touchstart", down, { passive: false });
+        }
+    }
+
+    _renderStatusPill() {
+        const sr = this.shadowRoot;
+        const pill = sr.getElementById("status-pill");
+        if (!pill) return;
+        const s = this._stateObj;
+        if (!s || this._config.show_status_pill === false) {
+            pill.className = "status-pill hidden"; pill.innerHTML = ""; return;
+        }
+        pill.className = "status-pill";
+        // hvac_action drives colour/label; fall back to state.
+        const action = s.attributes.hvac_action || (s.state === "off" ? "off" : "idle");
+        const label = this._cap(action);
+        // Power icon (thermometer-like) — matches the reference's little glyph.
+        const icon = `<svg viewBox="0 0 24 24"><path d="M13 4a3 3 0 00-6 0v7.5a5 5 0 106 0V4zm-3 14a3 3 0 01-1-5.8V4a1 1 0 012 0v8.2A3 3 0 0110 18z"/></svg>`;
+        pill.innerHTML = `<button class="pill ${action}" id="pill-btn" title="${label}">${icon}<span>${label}</span></button>`;
+        if (!this._config.display_only) {
+            const btn = pill.querySelector("#pill-btn");
+            if (btn) btn.addEventListener("click", () => this._togglePower());
+        }
+    }
+
+    _togglePower() {
+        if (!this._hass || !this._config) return;
+        const s = this._stateObj;
+        if (!s) return;
+        const ent = this._config.entity;
+        if (s.state === "off") {
+            // Turn on: prefer a non-off mode the entity supports.
+            const modes = (s.attributes.hvac_modes || []).filter((m) => m !== "off");
+            const target = modes.includes("heat") ? "heat" : (modes[0] || "auto");
+            this._hass.callService("climate", "set_hvac_mode", { entity_id: ent, hvac_mode: target });
+        } else {
+            this._hass.callService("climate", "set_hvac_mode", { entity_id: ent, hvac_mode: "off" });
         }
     }
 
@@ -701,6 +758,7 @@ class NeumorphicClimateCardEditor extends HTMLElement {
       ${this._toggle("show_fan", "Fan mode buttons", true)}
       ${this._toggle("show_swing", "Swing mode buttons", true)}
       ${this._toggle("show_humidity", "Humidity readout", true)}
+      ${this._toggle("show_status_pill", "Status pill under dial", true)}
     `;
         const style = document.createElement("style");
         style.textContent = CLIMATE_EDITOR_CSS;
