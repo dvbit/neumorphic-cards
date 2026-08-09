@@ -1,0 +1,62 @@
+# Neumorphic Slider — COMPLEX
+type: custom:neumorphic-slider-card
+entity: input_number.brightness
+attribute: ""                # optional: control an attribute instead of state
+name: Brightness
+orientation: vertical        # vertical | horizontal
+min: 0
+max: 100
+step: 1
+unit: "%"
+show_value: true
+show_range: true
+show_border: true
+show_icon_border: true
+display_only: false          # true = read-only (hides thumb/track/range)
+# ── Colours ──
+use_theme_colors: false      # true = pull all colours from HA theme vars
+color: "#e0c97f"
+background_color: "#e0e5ec"
+shadow_dark: "rgba(163,177,198,0.6)"
+shadow_light: "rgba(255,255,255,0.9)"
+text_color: "#3d4f6b"
+label_color: "#8a9bb2"
+# ── Fill & glow ──
+fill_mode: solid             # solid | gradient
+fill_opacity: 0.72
+glow: true
+glow_size: 18
+glow_opacity: 0.55
+# ── Track ──
+track_length: 280            # px (0 = stretch to fill, horizontal)
+track_thickness: 6
+track_radius: 3
+# ── Thumb ──
+thumb_thickness: 46          # across travel
+thumb_length: 24             # along travel
+thumb_shape: round           # round | squircle | square
+thumb_shadow_size: 5
+# ── Icon ──
+icon: mdi:brightness-6
+icon_color: "#e0c97f"
+icon_size: 46
+icon_box_radius: 13
+icon_mdi_size: 22
+icon_animation: none         # none | spin | pulse | bounce | shake | ping | blink
+# ── Card & spacing ──
+card_radius: 22
+card_padding: "24px 20px 20px"
+card_shadow_size: 7
+# ── Labels ──
+label_position: start        # start | end
+label_main: Brightness
+label_minor: Living room
+# ── Typography ──
+font_name: "0.76rem"
+font_value: "1.05rem"
+font_range: "0.68rem"
+# ── Grip lines on thumb ──
+grip_lines: 3
+grip_width: 18
+grip_height: 2
+grip_gap: 3.5

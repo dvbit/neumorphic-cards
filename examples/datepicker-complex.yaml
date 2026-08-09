@@ -1,0 +1,38 @@
+# Neumorphic Date Picker — COMPLEX
+type: custom:datepicker-card
+entity: input_datetime.my_date
+year_min: 2023
+year_max: 2035
+hide_border: false
+holiday_entity: calendar.holidays   # optional: highlights holiday dates
+holiday_color: "#e07070"
+# ── Text blocks ──
+label_major:                 # heading above/below the picker
+  text: Date
+  position: top              # top | bottom | none
+  font: Space Mono
+  size: 0.78rem
+  weight: "800"
+  spacing: 0.18em
+  transform: uppercase
+  color: ""
+label_minor:
+  text: ""
+  position: bottom
+  font: ""
+  size: 0.62rem
+  weight: "600"
+  spacing: 0.06em
+  transform: none
+value:                       # the selected date text
+  font: ""
+  size: 1.3rem
+  weight: "900"
+  spacing: 0px
+  transform: none
+  color: ""
+icon:
+  name: mdi:calendar
+  position: none             # none | left | right
+  size: 1.4rem
+  color: ""

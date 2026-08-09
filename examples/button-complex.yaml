@@ -1,0 +1,40 @@
+# Neumorphic Button — COMPLEX
+type: custom:neumorphic-button-card
+entity: light.living_room
+name: Living Room
+icon: mdi:lightbulb
+shape: squircle              # round | squircle | square
+size: 80                     # knob diameter in px
+icon_size: 34
+icon_on_color: "#e8824a"
+icon_off_color: "#8a9bb2"
+icon_animation: pulse        # none | pulse | spin | bounce | shake | ping | blink
+glow_intensity: 1.2          # 0–2, glow around the knob when "on"
+depth: 1.2                   # neumorphic shadow depth multiplier
+card_mode: default
+show_dot: true               # small status dot
+tap_action: toggle           # toggle | more-info | navigate | call-service | none
+hold_action: more-info
+hold_timeout: 500
+# Optional explicit service (overrides tap_action toggle):
+# service: light.turn_on
+# service_data: { brightness_pct: 80 }
+label_major:                 # primary label under/over the knob
+  visible: true
+  text: Living Room
+  position: bottom           # top | bottom
+  font_size: 13
+  font_weight: 600
+  font_family: Space Mono
+  letter_spacing: 0.04
+  text_transform: none
+  color: "#3d4f6b"
+  opacity: 0.85
+  align: center
+label_minor:                 # secondary smaller label
+  visible: true
+  font_size: 10
+  font_weight: 400
+  text_transform: uppercase
+  letter_spacing: 0.07
+  opacity: 0.5

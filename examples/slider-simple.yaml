@@ -1,0 +1,4 @@
+# Neumorphic Slider — SIMPLE
+type: custom:neumorphic-slider-card
+entity: light.living_room
+name: Brightness

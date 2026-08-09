@@ -1,0 +1,37 @@
+# Neumorphic Calendar Grid — COMPLEX
+type: custom:neumorphic-calendar-grid-card
+entities:
+  - calendar.personal
+  - calendar.work
+title: Calendar
+first_day: monday            # monday | sunday
+card_size: 340               # px (260–520)
+accent_color: "#006666"      # today / selected highlight
+event_color: "#006666"       # event dots & agenda accent
+show_week_numbers: false
+show_agenda: true            # the events panel below the grid
+no_border: false
+display_only: false
+# ── Typography (each block: show / text / font / size / weight / color / transform / spacing) ──
+title_label:
+  show: true
+  text: Calendar
+  font: Space Mono
+  size: 15px
+  weight: 700
+  transform: uppercase
+  spacing: 0.06em
+  color: "#1E2938"
+weekday_label:
+  font: Space Mono
+  size: 10.5px
+  weight: 600
+  transform: uppercase
+date_label:
+  font: Space Mono
+  size: 14px
+agenda_label:
+  show: true
+  font: Space Mono
+  size: 11px
+  transform: uppercase

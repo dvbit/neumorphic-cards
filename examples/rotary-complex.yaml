@@ -1,0 +1,34 @@
+# Neumorphic Rotary Slider — COMPLEX
+type: custom:neumorphic-rotary-slider
+entity: media_player.living_room
+attribute: volume_level
+label: Volume
+min: 0
+max: 100
+step: 1
+unit: "%"
+# ── Service used to write the value back ──
+service: media_player.volume_set
+service_data_key: volume_level
+scale: 0.01                  # multiply the 0–100 dial value before sending (100 → 1.0)
+# ── Value display ──
+value_position: below        # below | center
+value_label: { show: true, size: "22px", weight: 500 }
+min_label: { show: true }
+max_label: { show: true }
+# ── Dial geometry (angles: 0=bottom, 90=left, 180=top, 270=right) ──
+zero_angle: 0
+min_angle: 45                # degrees CW from zero for MIN
+max_angle: 315               # degrees CW from zero for MAX
+card_size: 220               # px (100–400) — everything scales from this
+disc_radius:                 # px override (omit to auto-scale)
+handle_radius:               # px override (omit to auto-scale)
+# ── Look ──
+disc_3d: false               # convex 3D shading on the disc
+glow_intensity: 0.65         # 0–1
+glow_color:                  # e.g. "#ff6b35" (omit = theme default)
+markers: none                # none | ticks | trail | dots | ghosts | combined
+range_style: none            # none | progress | dial_ticks
+dial_ticks: 21               # ticks for dial_ticks style
+progress_color:              # arc colour (or gradient start)
+progress_color_end:          # gradient end (omit for solid)

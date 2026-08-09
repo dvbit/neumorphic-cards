@@ -1,0 +1,5 @@
+# Neumorphic Rotary Slider — SIMPLE
+type: custom:neumorphic-rotary-slider
+entity: media_player.living_room
+attribute: volume_level
+label: Volume

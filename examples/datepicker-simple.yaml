@@ -1,0 +1,3 @@
+# Neumorphic Date Picker — SIMPLE
+type: custom:datepicker-card
+entity: input_datetime.my_date

@@ -1,0 +1,4 @@
+# Neumorphic Calendar Grid — SIMPLE
+type: custom:neumorphic-calendar-grid-card
+entities:
+  - calendar.personal

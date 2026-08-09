@@ -1,0 +1,8 @@
+# Neumorphic Container — SIMPLE
+# A neumorphic wrapper around any other Lovelace cards.
+type: custom:neumorphic-container-card
+title: My Section
+cards:
+  - type: entities
+    entities:
+      - sun.sun

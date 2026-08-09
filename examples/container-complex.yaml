@@ -1,0 +1,23 @@
+# Neumorphic Container — COMPLEX
+type: custom:neumorphic-container-card
+title: Living Room
+icon: mdi:sofa
+style: raised                # raised | sunken | flat
+columns: 2                   # grid columns for child cards
+gap: 12                      # gap between child cards (px)
+padding: 16
+radius: 16
+collapsible: true            # show a collapse/expand toggle
+default_open: true
+cards:
+  - type: custom:neumorphic-button-card
+    entity: light.living_room
+    icon: mdi:lightbulb
+  - type: custom:neumorphic-slider-card
+    entity: input_number.brightness
+    name: Brightness
+    orientation: horizontal
+  - type: entities
+    entities:
+      - sensor.temperature
+      - sensor.humidity

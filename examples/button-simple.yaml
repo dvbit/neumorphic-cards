@@ -1,0 +1,4 @@
+# Neumorphic Button — SIMPLE
+type: custom:neumorphic-button-card
+entity: light.living_room
+icon: mdi:lightbulb

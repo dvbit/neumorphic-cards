@@ -1,0 +1,3 @@
+# Neumorphic Time Picker — SIMPLE
+type: custom:timepicker-card
+entity: input_datetime.my_time

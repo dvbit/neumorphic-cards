@@ -8,14 +8,16 @@ Every card ships with a full visual editor, raised / sunken / flat surface style
 
 | Card | `type:` | Description |
 |------|---------|-------------|
-| Button | `custom:neumorphic-button-card` | Button with shape options, animations, glow, and status dot. |
-| Slider | `custom:neumorphic-slider-card` | Linear horizontal / vertical slider. |
-| Rotary Slider | `custom:neumorphic-rotary-slider` | Circular rotary knob with extensive parametric config. |
-| Container | `custom:neumorphic-container-card` | Wrapper card with CSS-grid layout for child cards. |
-| Calendar Grid | `custom:neumorphic-calendar-grid-card` | Month-grid calendar with today highlight, navigation, and tap-for-events. |
-| Climate | `custom:neumorphic-climate-card` | Soft-UI thermostat with a gradient dial and full climate controls (HVAC modes, presets, fan, swing, humidity). |
-| Date Picker | `custom:datepicker-card` | Concentric disc-ring date picker. |
-| Time Picker | `custom:timepicker-card` | Concentric disc-ring time picker. |
+| Button | `custom:neumorphic-button-card` | Button with shape options, animations, glow, and status dot. — [simple](./examples/button-simple.yaml) · [complex](./examples/button-complex.yaml) |
+| Slider | `custom:neumorphic-slider-card` | Linear horizontal / vertical slider. — [simple](./examples/slider-simple.yaml) · [complex](./examples/slider-complex.yaml) |
+| Rotary Slider | `custom:neumorphic-rotary-slider` | Circular rotary knob with extensive parametric config. — [simple](./examples/rotary-simple.yaml) · [complex](./examples/rotary-complex.yaml) |
+| Container | `custom:neumorphic-container-card` | Wrapper card with CSS-grid layout for child cards. — [simple](./examples/container-simple.yaml) · [complex](./examples/container-complex.yaml) |
+| Calendar Grid | `custom:neumorphic-calendar-grid-card` | Month-grid calendar with today highlight, navigation, and tap-for-events. — [simple](./examples/calendar-simple.yaml) · [complex](./examples/calendar-complex.yaml) |
+| Climate | `custom:neumorphic-climate-card` | Soft-UI thermostat with a gradient dial and full climate controls. — [simple](./examples/climate-simple.yaml) · [full](./examples/climate-full.yaml) |
+| Date Picker | `custom:datepicker-card` | Concentric disc-ring date picker. — [simple](./examples/datepicker-simple.yaml) · [complex](./examples/datepicker-complex.yaml) |
+| Time Picker | `custom:timepicker-card` | Concentric disc-ring time picker. — [simple](./examples/timepicker-simple.yaml) · [complex](./examples/timepicker-complex.yaml) |
+
+**📖 [Full parameter reference for every card →](./PARAMETERS.md)** · Copy-paste examples in [`examples/`](./examples).
 
 All seven cards are shipped in a single bundled file, so **installing the repo registers every card automatically** — no manual resource setup.
 
