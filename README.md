@@ -13,6 +13,7 @@ Every card ships with a full visual editor, raised / sunken / flat surface style
 | Rotary Slider | `custom:neumorphic-rotary-slider` | Circular rotary knob with extensive parametric config. |
 | Container | `custom:neumorphic-container-card` | Wrapper card with CSS-grid layout for child cards. |
 | Calendar Grid | `custom:neumorphic-calendar-grid-card` | Month-grid calendar with today highlight, navigation, and tap-for-events. |
+| Climate | `custom:neumorphic-climate-card` | Soft-UI thermostat with a gradient dial and full climate controls (HVAC modes, presets, fan, swing, humidity). |
 | Date Picker | `custom:datepicker-card` | Concentric disc-ring date picker. |
 | Time Picker | `custom:timepicker-card` | Concentric disc-ring time picker. |
 
@@ -67,6 +68,23 @@ type: custom:neumorphic-button-card
 entity: light.living_room
 style: raised
 ```
+
+### Climate example
+
+```yaml
+type: custom:neumorphic-climate-card
+entity: climate.living_room
+name: Living Room
+card_size: 320
+show_current_as_primary: false
+show_modes: true
+show_presets: true
+show_fan: true
+show_swing: true
+show_humidity: true
+```
+
+Drag or tap the gradient ring to set the target temperature. Buttons for HVAC modes, presets, fan, and swing appear automatically for whatever the entity supports.
 
 ## Theming
 
