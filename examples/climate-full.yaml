@@ -1,0 +1,84 @@
+# Neumorphic Climate — FULL
+# Every option, with comments. Remove anything you don't need — all keys
+# except `entity` are optional and fall back to sensible defaults.
+
+type: custom:neumorphic-climate-card
+entity: climate.living_room
+
+# ── Basics ──────────────────────────────────────────────────────────────
+name: Living Room            # header title (overridden by title_label.text if set)
+card_size: 340               # base width in px (240–520)
+
+# ── Layout / behaviour ──────────────────────────────────────────────────
+show_current_as_primary: false   # true = current temp is the big number, target is small
+show_unit_toggle: true           # show the °F / °C display toggle (visual only)
+show_status_pill: true           # green HVAC status pill under the dial (tap = power toggle)
+no_border: false                 # true = transparent background, no card shadow
+display_only: false              # true = read-only (hides the drag handle, disables buttons)
+
+# ── Which control groups to show (each also needs entity support) ───────
+show_modes: true             # HVAC mode buttons (off/heat/cool/heat_cool/auto/dry/fan)
+show_presets: true           # preset buttons (home/away/eco/…)
+show_fan: true               # fan mode buttons
+show_swing: true             # swing mode buttons
+show_humidity: true          # humidity readout (if the entity reports it)
+
+# ── Colours ─────────────────────────────────────────────────────────────
+accent_color: "#4aa3df"      # tints the active preset/fan/swing buttons
+
+# ── Typography ──────────────────────────────────────────────────────────
+# Every text block below is optional and shares the same fields:
+#   show:      true | false          (hide the element entirely)
+#   text:      "override"            (title & — where applicable — replace auto text)
+#   font:      "Poppins"             (any Google Font name loads automatically)
+#   size:      "18px"                (CSS size string)
+#   weight:    300 | 400 | 500 | 600 | 700 | 900
+#   color:     "#RRGGBB"
+#   transform: none | uppercase | lowercase | capitalize
+#   spacing:   "0.04em"              (letter-spacing)
+
+title_label:                 # the header title
+  show: true
+  text: Living Room
+  font: Space Mono
+  size: 13px
+  weight: 700
+  color: "#8a929e"
+  transform: uppercase
+  spacing: 0.12em
+
+primary_label:               # the big temperature number in the dial centre
+  font: Poppins
+  size: 60px
+  weight: 300
+  color: "#8a929e"
+
+secondary_label:             # the small temperature number beneath it
+  font: Poppins
+  size: 16px
+  weight: 400
+  color: "#c3c9d2"
+
+group_label:                 # the "MODE" / "PRESET" / "FAN" / "SWING" section labels
+  font: Space Mono
+  size: 9.5px
+  weight: 600
+  transform: uppercase
+  spacing: 0.10em
+  color: "#c3c9d2"
+
+chip_label:                  # the text inside the control buttons
+  font: Space Mono
+  size: 11px
+  weight: 600
+
+pill_label:                  # the text inside the green status pill
+  font: Space Mono
+  size: 10.5px
+  weight: 600
+  color: "#ffffff"
+
+humidity_label:              # the humidity readout row
+  font: Space Mono
+  size: 11px
+  color: "#aeb5c0"

@@ -78,6 +78,31 @@ function resolveIsDark(hass) {
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 function round1(v) { return Math.round(v * 10) / 10; }
 
+// ── Typography helpers (shared pattern with the rest of the suite) ────────────
+function labelVisible(cfg) {
+    if (cfg === undefined) return true;
+    return cfg.show !== false;
+}
+function applyTypography(el, cfg) {
+    if (!cfg || !el) return;
+    if (cfg.font != null && cfg.font !== "") el.style.fontFamily = cfg.font;
+    if (cfg.size != null && cfg.size !== "") el.style.fontSize = cfg.size;
+    if (cfg.color != null && cfg.color !== "") el.style.color = cfg.color;
+    if (cfg.weight != null && cfg.weight !== "") el.style.fontWeight = String(cfg.weight);
+    if (cfg.transform != null && cfg.transform !== "") el.style.textTransform = cfg.transform;
+    if (cfg.spacing != null && cfg.spacing !== "") el.style.letterSpacing = cfg.spacing;
+}
+const FONT_PRESETS = [
+    { v: "", l: "Default (theme)" }, { v: "Space Mono", l: "Space Mono" },
+    { v: "JetBrains Mono", l: "JetBrains Mono" }, { v: "system-ui", l: "System UI" },
+    { v: "Arial", l: "Arial" }, { v: "Georgia", l: "Georgia" }, { v: "Roboto", l: "Roboto" },
+    { v: "Open Sans", l: "Open Sans" }, { v: "Lato", l: "Lato" }, { v: "Montserrat", l: "Montserrat" },
+    { v: "Poppins", l: "Poppins" }, { v: "Inter", l: "Inter" }, { v: "Oswald", l: "Oswald" },
+    { v: "Bebas Neue", l: "Bebas Neue" }, { v: "Outfit", l: "Outfit" }, { v: "Nunito", l: "Nunito" },
+    { v: "Quicksand", l: "Quicksand" }, { v: "__custom__", l: "✏ Custom…" },
+];
+const WEB_SAFE = new Set(["", "system-ui", "Arial", "Georgia", "monospace", "serif", "sans-serif"]);
+
 // SVG arc path from angle a0 to a1 (degrees, 0° = 12 o'clock, clockwise).
 function arcPath(cx, cy, r, a0, a1) {
     const p0 = polar(cx, cy, r, a0);
@@ -228,6 +253,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const softOutSm = `${Math.round(4 * sc)}px ${Math.round(4 * sc)}px ${Math.round(9 * sc)}px ${p.shadowDark}, -${Math.round(4 * sc)}px -${Math.round(4 * sc)}px ${Math.round(9 * sc)}px ${p.shadowLight}`;
         const softIn = `inset ${Math.round(3 * sc)}px ${Math.round(3 * sc)}px ${Math.round(7 * sc)}px ${p.shadowDark}, inset -${Math.round(3 * sc)}px -${Math.round(3 * sc)}px ${Math.round(7 * sc)}px ${p.shadowLight}`;
         const cfg = this._config || {};
+        const accent = cfg.accent_color || "#4aa3df";
         el.textContent = `
       :host { display:block; }
       ha-card {
@@ -312,7 +338,7 @@ class NeumorphicClimateCard extends HTMLElement {
       .chip svg { width:${Math.round(16*sc)}px; height:${Math.round(16*sc)}px; fill:none; stroke:currentColor; stroke-width:1.6; }
       .chip.icon-only { padding:${Math.round(9*sc)}px; min-width:0; }
       .chip:active { transform:translateY(0.5px); }
-      .chip.active { color:${p.textPrimary}; box-shadow:${softIn}; }
+      .chip.active { color:${accent}; box-shadow:${softIn}; }
       .chip.active.m-heat { color:#e2685f; } .chip.active.m-cool { color:#4aa3df; }
       .chip.active.m-heat_cool { color:#8bd07a; } .chip.active.m-dry { color:#f2c14e; }
       .chip.active.m-fan_only { color:#57c9c2; } .chip.active.m-auto,.chip.active.m-off { color:${p.textPrimary}; }
@@ -378,7 +404,15 @@ class NeumorphicClimateCard extends HTMLElement {
         }
 
         // Title
-        if (titleEl) titleEl.textContent = this._config.name || s.attributes.friendly_name || this._config.entity;
+        if (titleEl) {
+            const tvis = labelVisible(this._config.title_label);
+            titleEl.style.display = tvis ? "" : "none";
+            if (tvis) {
+                const custom = (this._config.title_label && this._config.title_label.text) || this._config.name;
+                titleEl.textContent = custom || s.attributes.friendly_name || this._config.entity;
+                applyTypography(titleEl, this._config.title_label);
+            }
+        }
 
         // HVAC action status
         const action = s.attributes.hvac_action || (s.state === "off" ? "off" : "idle");
@@ -474,6 +508,12 @@ class NeumorphicClimateCard extends HTMLElement {
       </svg>
       <div class="dial-center">${centerHTML}</div>`;
 
+        // Apply configurable typography to the temperature texts.
+        const primaryEls = wrap.querySelectorAll(".t-primary");
+        primaryEls.forEach((el) => applyTypography(el, this._config.primary_label));
+        const secEl = wrap.querySelector(".t-secondary");
+        if (secEl) applyTypography(secEl, this._config.secondary_label);
+
         // Drag wiring
         if (!this._config.display_only) {
             const svg = wrap.querySelector("svg");
@@ -498,6 +538,8 @@ class NeumorphicClimateCard extends HTMLElement {
         // Power icon (thermometer-like) — matches the reference's little glyph.
         const icon = `<svg viewBox="0 0 24 24"><path d="M13 4a3 3 0 00-6 0v7.5a5 5 0 106 0V4zm-3 14a3 3 0 01-1-5.8V4a1 1 0 012 0v8.2A3 3 0 0110 18z"/></svg>`;
         pill.innerHTML = `<button class="pill ${action}" id="pill-btn" title="${label}">${icon}<span>${label}</span></button>`;
+        const pspan = pill.querySelector(".pill span");
+        if (pspan) applyTypography(pspan, this._config.pill_label);
         if (!this._config.display_only) {
             const btn = pill.querySelector("#pill-btn");
             if (btn) btn.addEventListener("click", () => this._togglePower());
@@ -599,6 +641,12 @@ class NeumorphicClimateCard extends HTMLElement {
 
         wrap.innerHTML = html;
 
+        // Configurable typography for section labels and chips.
+        wrap.querySelectorAll(".ctrl-label").forEach((el) => applyTypography(el, this._config.group_label));
+        wrap.querySelectorAll(".chip span").forEach((el) => applyTypography(el, this._config.chip_label));
+        const humEl = wrap.querySelector(".humidity");
+        if (humEl) applyTypography(humEl, this._config.humidity_label);
+
         if (!cfg.display_only) {
             wrap.querySelectorAll(".chip").forEach((btn) => {
                 btn.addEventListener("click", () => this._onChip(btn.dataset.kind, btn.dataset.val));
@@ -675,13 +723,33 @@ class NeumorphicClimateCard extends HTMLElement {
 }
 
 // ── Editor ────────────────────────────────────────────────────────────────────
+// ── Editor (full-featured: sections, fonts, label typography, colours) ─────────
 const CLIMATE_EDITOR_CSS = `
   :host { display:block; font-family:var(--paper-font-body1_-_font-family,sans-serif); }
-  .sec-hdr { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--secondary-text-color,#8891a0); padding:14px 0 6px; border-bottom:1px solid var(--divider-color,rgba(0,0,0,.08)); margin-bottom:10px; }
+  .sec-hdr {
+    display:flex; align-items:center; gap:8px;
+    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--secondary-text-color,#8891a0);
+    padding:14px 0 6px; border-bottom:1px solid var(--divider-color,rgba(0,0,0,.08));
+    margin-bottom:10px; cursor:pointer; user-select:none;
+  }
+  .sec-hdr svg { flex-shrink:0; opacity:.55; transition:transform .18s ease; }
+  .sec-hdr.collapsed svg { transform:rotate(-90deg); }
+  .sec-body { margin-bottom:4px; }
+  .sec-body.hidden { display:none; }
   label { display:block; font-size:12px; color:var(--secondary-text-color,#6b7280); margin-bottom:3px; font-weight:500; }
-  input[type=text],input[type=number],select { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--divider-color,#d1d5db); background:var(--card-background-color,#fff); color:var(--primary-text-color,#111); font-size:13px; box-sizing:border-box; font-family:inherit; }
+  input[type=text],input[type=number],select {
+    width:100%; padding:8px 10px; border-radius:6px;
+    border:1px solid var(--divider-color,#d1d5db);
+    background:var(--card-background-color,#fff);
+    color:var(--primary-text-color,#111);
+    font-size:13px; box-sizing:border-box; font-family:inherit;
+    transition:border-color .15s;
+  }
   input:focus,select:focus { outline:none; border-color:var(--primary-color,#4aa3df); }
   .field { margin-bottom:8px; }
+  .row2 { display:flex; gap:8px; margin-bottom:8px; }
+  .row2 > * { flex:1; min-width:0; }
   .range-wrap { display:flex; align-items:center; gap:8px; }
   .range-wrap input[type=range] { flex:1; accent-color:var(--primary-color,#4aa3df); }
   .range-val { font-size:12px; font-weight:700; color:var(--primary-color,#4aa3df); min-width:44px; text-align:right; font-family:monospace; }
@@ -693,6 +761,11 @@ const CLIMATE_EDITOR_CSS = `
   .sw-track::before { content:""; position:absolute; height:14px; width:14px; left:3px; bottom:3px; border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   input:checked + .sw-track { background:var(--primary-color,#4aa3df); }
   input:checked + .sw-track::before { transform:translateX(16px); }
+  .color-field { display:flex; align-items:center; gap:6px; }
+  .color-swatch { width:32px; height:32px; border-radius:6px; flex-shrink:0; border:1px solid var(--divider-color,#d1d5db); cursor:pointer; position:relative; overflow:hidden; }
+  .color-swatch input[type=color] { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px); opacity:0; cursor:pointer; padding:0; border:none; }
+  .color-field input[type=text] { flex:1; font-family:monospace; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .font-hint { font-size:10px; color:var(--secondary-text-color,#8891a0); margin-top:2px; display:block; }
   ha-entity-picker { display:block; width:100%; margin-bottom:8px; }
 `;
 
@@ -701,6 +774,7 @@ class NeumorphicClimateCardEditor extends HTMLElement {
         super();
         this._hass = null;
         this._config = {};
+        this._sections = {};
         this._built = false;
     }
     set hass(hass) {
@@ -713,82 +787,233 @@ class NeumorphicClimateCardEditor extends HTMLElement {
         if (!this._built) { this.attachShadow({ mode: "open" }); this._built = true; }
         this._render();
     }
-    _get(k, fb = "") { return this._config[k] !== undefined ? this._config[k] : fb; }
-    _set(k, v) {
-        const next = Object.assign({}, this._config);
-        if (v === "" || v === null || v === undefined) delete next[k]; else next[k] = v;
-        this._config = next;
-        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: next }, bubbles: true, composed: true }));
+    _get(path, fb = "") {
+        const v = path.split(".").reduce((o, k) => (o != null && typeof o === "object") ? o[k] : undefined, this._config);
+        return v !== undefined && v !== null ? v : fb;
+    }
+    _set(path, value) {
+        const parts = path.split(".");
+        let cur = this._config;
+        for (let i = 0; i < parts.length - 1; i++) {
+            if (cur[parts[i]] == null || typeof cur[parts[i]] !== "object") cur[parts[i]] = {};
+            cur = cur[parts[i]];
+        }
+        if (value === "" || value === undefined || value === null) delete cur[parts[parts.length - 1]];
+        else cur[parts[parts.length - 1]] = value;
+        this._fire();
+    }
+    _fire() {
+        this.dispatchEvent(new CustomEvent("config-changed", {
+            detail: { config: Object.assign({}, this._config) },
+            bubbles: true, composed: true,
+        }));
+    }
+    _loadFont(family) {
+        if (!family || WEB_SAFE.has(family)) return;
+        const id = `gfont-${family.replace(/\s+/g, "-")}`;
+        if (document.getElementById(id)) return;
+        const link = Object.assign(document.createElement("link"), {
+            id, rel: "stylesheet",
+            href: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@300;400;500;600;700;900&display=swap`,
+        });
+        document.head.appendChild(link);
+    }
+    _toggleSection(id) {
+        this._sections[id] = !this._sections[id];
+        const h = this.shadowRoot.querySelector(`[data-sec="${id}"]`);
+        const b = this.shadowRoot.querySelector(`[data-secbody="${id}"]`);
+        if (h) h.classList.toggle("collapsed", !!this._sections[id]);
+        if (b) b.classList.toggle("hidden", !!this._sections[id]);
+    }
+    _sec(id, title, body) {
+        const c = !!this._sections[id];
+        return `<div class="sec-hdr${c ? " collapsed" : ""}" data-sec="${id}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+      ${title}</div>
+      <div class="sec-body${c ? " hidden" : ""}" data-secbody="${id}">${body}</div>`;
     }
     _entityPicker() {
         const v = this._get("entity");
         if (customElements.get("ha-entity-picker")) {
             return `<ha-entity-picker id="entity_picker" data-path="entity" .value="${v}" value="${v}" include-domains='["climate"]' allow-custom-entity></ha-entity-picker>`;
         }
-        return `<input type="text" id="entity_txt" value="${v}" placeholder="climate.living_room">`;
+        return `<input type="text" data-path="entity" value="${String(v).replace(/"/g, "&quot;")}" placeholder="climate.living_room">`;
     }
-    _toggle(k, lbl, def = false) {
+    _text(path, lbl, ph = "") {
+        return `<div class="field"><label>${lbl}</label>
+      <input type="text" data-path="${path}" value="${String(this._get(path, "")).replace(/"/g, "&quot;")}" placeholder="${ph}"></div>`;
+    }
+    _range(path, lbl, min, max, step, suffix = "", def = min) {
+        const v = Number(this._get(path, def));
+        return `<div class="field"><label>${lbl}</label>
+      <div class="range-wrap">
+        <input type="range" data-path="${path}" value="${v}" min="${min}" max="${max}" step="${step}" data-suffix="${suffix}">
+        <span class="range-val" data-rv="${path}">${v}${suffix}</span>
+      </div></div>`;
+    }
+    _select(path, lbl, opts) {
+        const cur = String(this._get(path, opts[0].value));
+        return `<div class="field"><label>${lbl}</label>
+      <select data-path="${path}">${opts.map((o) => `<option value="${o.value}"${cur === o.value ? " selected" : ""}>${o.label}</option>`).join("")}</select></div>`;
+    }
+    _toggle(path, lbl, def = false) {
         return `<div class="tog-row"><label>${lbl}</label>
-      <label class="switch"><input type="checkbox" data-tog="${k}"${this._get(k, def) ? " checked" : ""}><span class="sw-track"></span></label></div>`;
+      <label class="switch"><input type="checkbox" data-path="${path}"${Boolean(this._get(path, def)) ? " checked" : ""}><span class="sw-track"></span></label></div>`;
     }
-    _range(k, lbl, min, max, stp, suf, def) {
-        const v = Number(this._get(k, def));
-        return `<div class="field"><label>${lbl}</label><div class="range-wrap">
-      <input type="range" data-range="${k}" value="${v}" min="${min}" max="${max}" step="${stp}" data-suf="${suf}">
-      <span class="range-val" data-rv="${k}">${v}${suf}</span></div></div>`;
+    _color(path, lbl, def = "#4aa3df") {
+        let raw = String(this._get(path, "") || def);
+        if (!raw.startsWith("#")) raw = def;
+        if (!/^#[0-9a-fA-F]{6}$/i.test(raw)) raw = def;
+        return `<div class="field"><label>${lbl}</label>
+      <div class="color-field" data-colorpath="${path}">
+        <div class="color-swatch" style="background:${raw}"><input type="color" value="${raw}"></div>
+        <input type="text" class="color-hex" value="${raw.toUpperCase()}" placeholder="#RRGGBB" maxlength="7">
+      </div></div>`;
+    }
+    _font(path, lbl) {
+        const cur = String(this._get(path, ""));
+        const isC = cur !== "" && !FONT_PRESETS.find((p) => p.v === cur && p.v !== "__custom__");
+        const sel = isC ? "__custom__" : cur;
+        return `<div class="field"><label>${lbl}</label>
+      <select data-path="${path}" data-font-sel>
+        ${FONT_PRESETS.map((p) => `<option value="${p.v}"${sel === p.v ? " selected" : ""}>${p.l}</option>`).join("")}
+      </select>
+      <input type="text" data-path="${path}" data-font-custom placeholder="e.g. Dancing Script"
+        style="${isC ? "" : "display:none"}" value="${isC ? cur : ""}">
+      <small class="font-hint">Google Fonts load automatically when selected.</small></div>`;
+    }
+    _labelBlock(prefix, hasText = true) {
+        return `
+      ${this._toggle(`${prefix}.show`, "Visible", true)}
+      ${hasText ? this._text(`${prefix}.text`, "Text override", "blank = auto") : ""}
+      <div class="row2">
+        ${this._text(`${prefix}.size`, "Size (e.g. 14px)", "14px")}
+        ${this._select(`${prefix}.weight`, "Weight", [
+            { value: "", label: "Default" }, { value: "300", label: "300" }, { value: "400", label: "400" },
+            { value: "500", label: "500" }, { value: "600", label: "600" }, { value: "700", label: "700" }, { value: "900", label: "900" },
+        ])}
+      </div>
+      ${this._font(`${prefix}.font`, "Font family")}
+      <div class="row2">
+        ${this._select(`${prefix}.transform`, "Transform", [
+            { value: "", label: "None" }, { value: "uppercase", label: "UPPERCASE" },
+            { value: "lowercase", label: "lowercase" }, { value: "capitalize", label: "Capitalize" },
+        ])}
+        ${this._text(`${prefix}.spacing`, "Letter spacing", "0.04em")}
+      </div>
+      ${this._color(`${prefix}.color`, "Color", "#8a929e")}`;
     }
     _render() {
         const sr = this.shadowRoot;
         const html = `
-      <div class="sec-hdr">Climate Entity</div>
-      <div class="field"><label>Entity (climate.*)</label>${this._entityPicker()}</div>
-      <div class="field"><label>Name (optional)</label>
-        <input type="text" data-txt="name" value="${this._get("name")}" placeholder="Friendly name override"></div>
-
-      <div class="sec-hdr">Layout</div>
-      ${this._range("card_size", "Card width (px)", 240, 520, 10, "px", 320)}
-      ${this._toggle("show_current_as_primary", "Show current temp as primary")}
-      ${this._toggle("show_unit_toggle", "Show °F/°C toggle")}
-      ${this._toggle("no_border", "No border / transparent background")}
-      ${this._toggle("display_only", "Display only — hide drag handle")}
-
-      <div class="sec-hdr">Controls</div>
-      ${this._toggle("show_modes", "HVAC mode buttons", true)}
-      ${this._toggle("show_presets", "Preset buttons", true)}
-      ${this._toggle("show_fan", "Fan mode buttons", true)}
-      ${this._toggle("show_swing", "Swing mode buttons", true)}
-      ${this._toggle("show_humidity", "Humidity readout", true)}
-      ${this._toggle("show_status_pill", "Status pill under dial", true)}
+      ${this._sec("entity", "🌡 Climate Entity", `
+        <div class="field"><label>Entity (climate.*)</label>${this._entityPicker()}</div>
+        ${this._text("name", "Name (optional)", "Friendly name override")}
+      `)}
+      ${this._sec("layout", "📐 Layout", `
+        ${this._range("card_size", "Card width (px)", 240, 520, 10, "px", 320)}
+        ${this._toggle("show_current_as_primary", "Show current temp as primary")}
+        ${this._toggle("show_unit_toggle", "Show °F/°C toggle")}
+        ${this._toggle("show_status_pill", "Status pill under dial", true)}
+        ${this._toggle("no_border", "No border / transparent background")}
+        ${this._toggle("display_only", "Display only — hide drag handle")}
+      `)}
+      ${this._sec("controls", "🎛 Controls", `
+        ${this._toggle("show_modes", "HVAC mode buttons", true)}
+        ${this._toggle("show_presets", "Preset buttons", true)}
+        ${this._toggle("show_fan", "Fan mode buttons", true)}
+        ${this._toggle("show_swing", "Swing mode buttons", true)}
+        ${this._toggle("show_humidity", "Humidity readout", true)}
+      `)}
+      ${this._sec("colors", "🎨 Colours", `
+        ${this._color("accent_color", "Accent", "#4aa3df")}
+      `)}
+      ${this._sec("title_lbl", "𝗔 Title Label", this._labelBlock("title_label", true))}
+      ${this._sec("primary_lbl", "① Primary Temperature", this._labelBlock("primary_label", false))}
+      ${this._sec("secondary_lbl", "② Secondary Temperature", this._labelBlock("secondary_label", false))}
+      ${this._sec("group_lbl", "≡ Group Labels (Mode/Preset/…)", this._labelBlock("group_label", false))}
+      ${this._sec("chip_lbl", "▭ Button Labels", this._labelBlock("chip_label", false))}
+      ${this._sec("pill_lbl", "◐ Status Pill Label", this._labelBlock("pill_label", false))}
+      ${this._sec("humidity_lbl", "％ Humidity Label", this._labelBlock("humidity_label", false))}
     `;
         const style = document.createElement("style");
         style.textContent = CLIMATE_EDITOR_CSS;
         const div = document.createElement("div");
         div.innerHTML = html;
 
-        // entity picker / text
+        // Entity picker / text
         const ep = div.querySelector("#entity_picker");
         if (ep) {
             ep.hass = this._hass;
             ep.addEventListener("value-changed", (e) => this._set("entity", e.detail.value));
-        } else {
-            const et = div.querySelector("#entity_txt");
-            if (et) et.addEventListener("change", () => this._set("entity", et.value.trim() || undefined));
         }
-        // text fields
-        div.querySelectorAll("input[data-txt]").forEach((el) => {
-            el.addEventListener("change", () => this._set(el.dataset.txt, el.value.trim() || undefined));
-        });
-        // toggles
-        div.querySelectorAll("input[data-tog]").forEach((el) => {
-            el.addEventListener("change", () => this._set(el.dataset.tog, el.checked));
-        });
-        // ranges
-        div.querySelectorAll("input[data-range]").forEach((el) => {
-            el.addEventListener("input", () => {
-                const rv = div.querySelector(`[data-rv="${el.dataset.range}"]`);
-                if (rv) rv.textContent = el.value + (el.dataset.suf || "");
+
+        // Text inputs (auto-append px on *.size fields)
+        div.querySelectorAll("input[type=text][data-path]:not(.color-hex):not([data-font-custom])").forEach((el) => {
+            el.addEventListener("change", () => {
+                let v = el.value;
+                if (typeof v === "string" && el.dataset.path.endsWith(".size") && v !== "" && /^\d+(\.\d+)?$/.test(v)) v = v + "px";
+                this._set(el.dataset.path, v === "" ? undefined : v);
+                this._render();
             });
-            el.addEventListener("change", () => this._set(el.dataset.range, Number(el.value)));
+        });
+        // Selects (+ font selector custom handling)
+        div.querySelectorAll("select[data-path]").forEach((sel) => {
+            sel.addEventListener("change", () => {
+                if (sel.dataset.fontSel !== undefined) {
+                    const ci = sel.nextElementSibling;
+                    if (sel.value === "__custom__") { ci.style.display = ""; ci.focus(); return; }
+                    if (ci) ci.style.display = "none";
+                    if (sel.value) this._loadFont(sel.value);
+                }
+                this._set(sel.dataset.path, sel.value === "" ? undefined : sel.value);
+                this._render();
+            });
+        });
+        // Custom font inputs
+        div.querySelectorAll("input[data-font-custom]").forEach((el) => {
+            el.addEventListener("change", () => {
+                if (el.value.trim()) this._loadFont(el.value.trim());
+                this._set(el.dataset.path, el.value.trim() || undefined);
+                this._render();
+            });
+        });
+        // Checkboxes
+        div.querySelectorAll("input[type=checkbox][data-path]").forEach((el) => {
+            el.addEventListener("change", () => { this._set(el.dataset.path, el.checked); this._render(); });
+        });
+        // Ranges
+        div.querySelectorAll("input[type=range][data-path]").forEach((el) => {
+            el.addEventListener("input", () => {
+                const rv = div.querySelector(`[data-rv="${el.dataset.path}"]`);
+                if (rv) rv.textContent = el.value + (el.dataset.suffix || "");
+            });
+            el.addEventListener("change", () => { this._set(el.dataset.path, Number(el.value)); this._render(); });
+        });
+        // Colour fields
+        div.querySelectorAll(".color-field[data-colorpath]").forEach((field) => {
+            const path = field.dataset.colorpath;
+            const native = field.querySelector("input[type=color]");
+            const swatch = field.querySelector(".color-swatch");
+            const text = field.querySelector("input.color-hex");
+            native.addEventListener("input", () => { swatch.style.background = native.value; text.value = native.value.toUpperCase(); });
+            native.addEventListener("change", () => { this._set(path, native.value); this._render(); });
+            text.addEventListener("input", () => {
+                let v = text.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+                if (/^#[0-9a-fA-F]{6}$/i.test(v)) { swatch.style.background = v; native.value = v; }
+            });
+            text.addEventListener("change", () => {
+                let v = text.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+                if (/^#[0-9a-fA-F]{6}$/i.test(v)) { this._set(path, v); this._render(); }
+            });
+        });
+        // Text fallback for entity when no picker
+        div.querySelectorAll('input[type=text][data-path="entity"]').forEach((el) => {
+            el.addEventListener("change", () => { this._set("entity", el.value.trim() || undefined); });
+        });
+        // Section headers
+        div.querySelectorAll(".sec-hdr[data-sec]").forEach((el) => {
+            el.addEventListener("click", () => this._toggleSection(el.dataset.sec));
         });
 
         sr.innerHTML = "";

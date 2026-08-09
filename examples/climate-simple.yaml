@@ -1,0 +1,7 @@
+# Neumorphic Climate — SIMPLE
+# The minimum you need: just point it at a climate entity.
+# Every control (HVAC modes, presets, fan, swing, humidity) appears
+# automatically based on what the entity supports.
+
+type: custom:neumorphic-climate-card
+entity: climate.living_room

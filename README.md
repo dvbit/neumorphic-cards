@@ -69,22 +69,70 @@ entity: light.living_room
 style: raised
 ```
 
-### Climate example
+### Climate examples
+
+**Simple** — just point it at an entity; every supported control appears automatically:
+
+```yaml
+type: custom:neumorphic-climate-card
+entity: climate.living_room
+```
+
+**Full** — all options, including per-element typography (font, size, weight, colour, transform, spacing):
 
 ```yaml
 type: custom:neumorphic-climate-card
 entity: climate.living_room
 name: Living Room
-card_size: 320
+card_size: 340
 show_current_as_primary: false
+show_unit_toggle: true
+show_status_pill: true
 show_modes: true
 show_presets: true
 show_fan: true
 show_swing: true
 show_humidity: true
+accent_color: "#4aa3df"
+title_label:
+  text: Living Room
+  font: Space Mono
+  size: 13px
+  weight: 700
+  transform: uppercase
+  spacing: 0.12em
+  color: "#8a929e"
+primary_label:
+  font: Poppins
+  size: 60px
+  weight: 300
+  color: "#8a929e"
+secondary_label:
+  font: Poppins
+  size: 16px
+  color: "#c3c9d2"
 ```
 
-Drag or tap the gradient ring to set the target temperature. Buttons for HVAC modes, presets, fan, and swing appear automatically for whatever the entity supports.
+Full commented examples are in [`examples/`](./examples): [climate-simple.yaml](./examples/climate-simple.yaml) and [climate-full.yaml](./examples/climate-full.yaml).
+
+Drag or tap the gradient ring to set the target temperature. Buttons for HVAC modes, presets, fan, and swing appear automatically for whatever the entity supports. The green pill beneath the dial shows the current HVAC action — tap it to toggle power.
+
+#### Climate options
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `entity` | — | **Required.** A `climate.*` entity. |
+| `name` | friendly name | Header title override. |
+| `card_size` | `320` | Base width in px (240–520). |
+| `show_current_as_primary` | `false` | Show current temp as the big number, target as the small one. |
+| `show_unit_toggle` | `false` | Show a °F/°C display toggle (visual only). |
+| `show_status_pill` | `true` | Green HVAC-action pill under the dial; tap toggles power. |
+| `show_modes` / `show_presets` / `show_fan` / `show_swing` | `true` | Show each control group (only if the entity supports it). |
+| `show_humidity` | `true` | Humidity readout when the entity reports it. |
+| `accent_color` | `#4aa3df` | Tints active preset/fan/swing buttons. |
+| `no_border` | `false` | Transparent background, no card shadow. |
+| `display_only` | `false` | Read-only: hides the handle, disables buttons. |
+| `title_label`, `primary_label`, `secondary_label`, `group_label`, `chip_label`, `pill_label`, `humidity_label` | — | Per-element typography blocks (`show`, `text`, `font`, `size`, `weight`, `color`, `transform`, `spacing`). |
 
 ## Theming
 
