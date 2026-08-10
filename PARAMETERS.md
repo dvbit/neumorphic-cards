@@ -243,12 +243,15 @@ Several cards accept **label blocks** — nested objects that configure one piec
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `entity` | — | **Required.** A `media_player.*` entity. |
+| `entity` | — | **Required** (or `entities`). The primary / default active `media_player.*`. |
+| `entities` | — | List of `media_player.*` (strings, or `{entity, name, icon}`) offered by the switcher chips. The primary `entity` is included automatically. |
 | `name` | `Playing` | Header centre label (or use `header_label.text`). |
 | `card_size` | `340` | Base width in px (260–460). |
-| `accent_color` | `#006666` | Progress fill and play-icon colour. |
+| `accent_color` | `#006666` | Progress fill, play icon, and active chip colour. |
 | `art_shape` | `circle` | `circle` \| `squircle` \| `square`. |
 | `spin_art` | `false` | Slowly rotate circular art while playing. |
+| `show_player_switcher` | `true` | Chip row to switch which player the card controls (auto-hidden with a single player). |
+| `show_grouping` | `true` | Header cast icon → panel to join/unjoin speakers (needs `GROUPING`). |
 | `show_header` | `true` | Back / label / menu row. |
 | `show_progress` | `true` | Progress bar + elapsed/total times (needs `media_duration`). |
 | `show_volume` | `false` | Volume slider + mute (needs `VOLUME_SET`). |
@@ -258,7 +261,7 @@ Several cards accept **label blocks** — nested objects that configure one piec
 | `display_only` | `false` | Art + info only; hides all controls. |
 | `header_label`, `title_label`, `artist_label` | — | Typography blocks (common schema). |
 
-Transport, seek, volume, shuffle, repeat, and source controls each appear only when the entity's `supported_features` advertises them. Buttons call the standard services (`media_play_pause`, `media_next_track`, `media_previous_track`, `media_seek`, `volume_set`, `volume_mute`, `shuffle_set`, `repeat_set`, `select_source`). The header buttons open the entity's more-info dialog.
+The **player switcher** is a UI-only selection — tapping a chip changes which entity the card drives, without any service call. **Grouping** uses `media_player.join` / `media_player.unjoin` and lists only other players that also advertise the `GROUPING` feature. All other controls appear only when the active entity's `supported_features` advertises them, calling the standard services (`media_play_pause`, `media_next_track`, `media_previous_track`, `media_seek`, `volume_set`, `volume_mute`, `shuffle_set`, `repeat_set`, `select_source`). The header buttons open the entity's more-info dialog.
 
 ---
 

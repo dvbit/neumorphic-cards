@@ -31,7 +31,7 @@ const MF = {
     PAUSE: 1, SEEK: 2, VOLUME_SET: 4, VOLUME_MUTE: 8, PREVIOUS_TRACK: 16, NEXT_TRACK: 32,
     TURN_ON: 128, TURN_OFF: 256, PLAY_MEDIA: 512, VOLUME_STEP: 1024, SELECT_SOURCE: 2048,
     STOP: 4096, CLEAR_PLAYLIST: 8192, PLAY: 16384, SHUFFLE_SET: 32768,
-    SELECT_SOUND_MODE: 65536, REPEAT_SET: 262144,
+    SELECT_SOUND_MODE: 65536, REPEAT_SET: 262144, GROUPING: 524288,
 };
 
 // ── Palettes (design-system tokens) ──────────────────────────────────────────
@@ -105,8 +105,19 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
     }
 
     setConfig(config) {
-        if (!config.entity) throw new Error("neumorphic-media-player-card: 'entity' is required");
+        if (!config.entity && !(Array.isArray(config.entities) && config.entities.length))
+            throw new Error("neumorphic-media-player-card: 'entity' (or 'entities') is required");
         this._rawConfig = config;
+        // Normalise the player list. Accept `entities:` (list) and/or single `entity`.
+        const list = [];
+        if (Array.isArray(config.entities)) {
+            for (const e of config.entities) {
+                if (typeof e === "string") list.push({ entity: e });
+                else if (e && e.entity) list.push({ entity: e.entity, name: e.name, icon: e.icon });
+            }
+        }
+        if (config.entity && !list.find((x) => x.entity === config.entity)) list.unshift({ entity: config.entity });
+        this._players = list;
         this._config = Object.assign({
             name: "Playing",
             card_size: 340,
@@ -117,8 +128,15 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             show_volume: false,
             show_shuffle_repeat: true,
             show_source: false,
+            show_player_switcher: true,
+            show_grouping: true,
             display_only: false,
-        }, config);
+        }, config, { entity: (list[0] && list[0].entity) || config.entity });
+        // Preserve the active selection across config edits if still valid.
+        if (!this._activeEntity || !list.find((x) => x.entity === this._activeEntity)) {
+            this._activeEntity = this._config.entity;
+        }
+        this._groupingOpen = false;
         if (this.shadowRoot) { this._updateStyle(); this._render(); }
     }
 
@@ -151,7 +169,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
 
     get _stateObj() {
         var _a, _b;
-        const ent = (_a = this._config) === null || _a === void 0 ? void 0 : _a.entity;
+        const ent = this._activeEntity || ((_a = this._config) === null || _a === void 0 ? void 0 : _a.entity);
         return ent && ((_b = this._hass) === null || _b === void 0 ? void 0 : _b.states) ? this._hass.states[ent] : null;
     }
     _supports(bit) {
@@ -199,8 +217,13 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       <div class="mp-header" id="mp-header">
         <button class="hbtn" id="mp-back" aria-label="Back">${this._chevron()}</button>
         <div class="hlabel" id="mp-label"></div>
-        <button class="hbtn" id="mp-menu" aria-label="More">${this._dots()}</button>
+        <div class="hright">
+          <button class="hbtn" id="mp-group" aria-label="Speaker groups">${this._castIcon()}</button>
+          <button class="hbtn" id="mp-menu" aria-label="More">${this._dots()}</button>
+        </div>
       </div>
+      <div class="switcher" id="mp-switcher"></div>
+      <div class="group-panel" id="mp-group-panel"></div>
       <div class="art-wrap" id="mp-art"></div>
       <div class="meta">
         <div class="title" id="mp-title"></div>
@@ -217,10 +240,12 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
 
         card.querySelector("#mp-back").addEventListener("click", () => this._moreInfo());
         card.querySelector("#mp-menu").addEventListener("click", () => this._moreInfo());
+        card.querySelector("#mp-group").addEventListener("click", () => { this._groupingOpen = !this._groupingOpen; this._render(); });
     }
 
     _chevron() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>`; }
     _dots() { return `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`; }
+    _castIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16a5 5 0 015 5"/><path d="M2 12a9 9 0 019 9"/><path d="M2 8a13 13 0 0113 13"/><rect x="2" y="3" width="20" height="16" rx="2"/></svg>`; }
 
     _updateStyle(styleEl) {
         var _a;
@@ -260,6 +285,33 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       .hbtn svg { width:${Math.round(18 * sc)}px; height:${Math.round(18 * sc)}px; }
       .hbtn:active { box-shadow:${softIn}; transform:translateY(0.5px); }
       .hlabel { font-size:${(12 * sc).toFixed(1)}px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${p.textSecondary}; }
+      .hright { display:flex; align-items:center; gap:${Math.round(8 * sc)}px; }
+
+      .switcher { display:flex; flex-wrap:wrap; gap:${Math.round(8 * sc)}px; justify-content:center; margin-bottom:${Math.round(18 * sc)}px; }
+      .switcher.hidden { display:none; }
+      .chip-sw {
+        display:inline-flex; align-items:center; gap:${Math.round(6 * sc)}px;
+        font-family:var(--primary-font-family,'Space Mono',monospace);
+        font-size:${(10.5 * sc).toFixed(1)}px; font-weight:600; color:${p.textSecondary};
+        background:${p.surface}; border:none; border-radius:${Math.round(11 * sc)}px;
+        padding:${Math.round(7 * sc)}px ${Math.round(11 * sc)}px; cursor:pointer;
+        box-shadow:${softOutSm}; -webkit-tap-highlight-color:transparent;
+        transition:box-shadow .12s ease, color .12s ease; max-width:${Math.round(120 * sc)}px;
+      }
+      .chip-sw svg { width:${Math.round(14 * sc)}px; height:${Math.round(14 * sc)}px; flex-shrink:0; }
+      .chip-sw span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .chip-sw.active { color:${accent}; box-shadow:${softIn}; }
+      .chip-sw .live { width:${Math.round(6 * sc)}px; height:${Math.round(6 * sc)}px; border-radius:50%; background:${accent}; flex-shrink:0; }
+
+      .group-panel { display:none; flex-direction:column; gap:${Math.round(6 * sc)}px; margin-bottom:${Math.round(18 * sc)}px; padding:${Math.round(12 * sc)}px; border-radius:${Math.round(14 * sc)}px; background:${p.surface}; box-shadow:${softIn}; }
+      .group-panel.open { display:flex; }
+      .group-title { font-size:${(9.5 * sc).toFixed(1)}px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${p.textFaint}; margin-bottom:${Math.round(2 * sc)}px; }
+      .group-row { display:flex; align-items:center; justify-content:space-between; padding:${Math.round(6 * sc)}px ${Math.round(4 * sc)}px; cursor:pointer; }
+      .group-row .gname { font-size:${(12 * sc).toFixed(1)}px; color:${p.textPrimary}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .group-row .gname.master { color:${accent}; font-weight:700; }
+      .gcheck { width:${Math.round(20 * sc)}px; height:${Math.round(20 * sc)}px; border-radius:6px; flex-shrink:0; background:${p.surface}; box-shadow:${softOutSm}; display:flex; align-items:center; justify-content:center; }
+      .gcheck.on { box-shadow:${softIn}; color:${accent}; }
+      .gcheck svg { width:${Math.round(13 * sc)}px; height:${Math.round(13 * sc)}px; }
 
       .art-wrap { display:flex; align-items:center; justify-content:center; margin-bottom:${Math.round(24 * sc)}px; }
       .art-disc {
@@ -367,12 +419,20 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             } else if (label) { label.textContent = ""; }
         }
 
+        // Header group button — only when the active player supports grouping.
+        const groupBtn = sr.getElementById("mp-group");
+        if (groupBtn) groupBtn.style.display = (this._config.show_grouping !== false && this._supports(MF.GROUPING)) ? "" : "none";
+
+        this._renderSwitcher();
+
         if (!s) {
             const t = sr.getElementById("mp-title"); if (t) t.textContent = cfg.entity || "Unavailable";
             const a = sr.getElementById("mp-artist"); if (a) a.textContent = "unavailable";
-            ["mp-progress", "mp-transport", "mp-extras", "mp-volume", "mp-source"].forEach((id) => { const e = sr.getElementById(id); if (e) e.classList.add("hidden"); });
+            ["mp-progress", "mp-transport", "mp-extras", "mp-volume", "mp-source", "mp-group-panel"].forEach((id) => { const e = sr.getElementById(id); if (e) e.classList.add("hidden"); });
             return;
         }
+
+        this._renderGrouping();
 
         if (s.state === "off" || s.state === "standby") {
             this._renderOff();
@@ -405,6 +465,78 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         if (btn && this._supports(MF.TURN_ON)) btn.addEventListener("click", () => this._svc("turn_on"));
     }
     _powerIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.6 6.6a8 8 0 1010.8 0"/></svg>`; }
+
+    // ── Player switcher (which player this card controls) ───────────────────────
+    _renderSwitcher() {
+        const sr = this.shadowRoot;
+        const wrap = sr.getElementById("mp-switcher");
+        if (!wrap) return;
+        const players = this._players || [];
+        if (this._config.show_player_switcher === false || players.length < 2) { wrap.classList.add("hidden"); wrap.innerHTML = ""; return; }
+        wrap.classList.remove("hidden");
+        wrap.innerHTML = players.map((pl) => {
+            const st = this._hass && this._hass.states[pl.entity];
+            const name = pl.name || (st && st.attributes.friendly_name) || pl.entity.split(".")[1];
+            const active = pl.entity === this._activeEntity;
+            const playing = st && st.state === "playing";
+            const icon = pl.icon ? "" : this._speakerIcon();
+            return `<button class="chip-sw ${active ? "active" : ""}" data-ent="${pl.entity}" title="${name}">
+              ${playing && !active ? `<span class="live"></span>` : icon}
+              <span>${name}</span></button>`;
+        }).join("");
+        wrap.querySelectorAll(".chip-sw").forEach((b) => {
+            b.addEventListener("click", () => {
+                if (b.dataset.ent !== this._activeEntity) {
+                    this._activeEntity = b.dataset.ent;
+                    this._groupingOpen = false;
+                    this._seekPending = null;
+                    this._updateStyle();
+                    this._render();
+                }
+            });
+        });
+    }
+    _speakerIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="14" r="3.5"/><circle cx="12" cy="6" r="1"/></svg>`; }
+
+    // ── Speaker grouping (play the same audio on several players) ────────────────
+    _renderGrouping() {
+        const sr = this.shadowRoot;
+        const panel = sr.getElementById("mp-group-panel");
+        if (!panel) return;
+        if (!this._groupingOpen || !this._supports(MF.GROUPING) || this._config.show_grouping === false) {
+            panel.className = "group-panel"; panel.innerHTML = ""; return;
+        }
+        panel.className = "group-panel open";
+        const s = this._stateObj;
+        const master = this._activeEntity;
+        const grouped = s.attributes.group_members || [];
+        // Candidate members: all media_players that also support grouping.
+        const candidates = Object.keys(this._hass.states)
+            .filter((e) => e.startsWith("media_player.") && e !== master)
+            .filter((e) => (Number(this._hass.states[e].attributes.supported_features || 0) & MF.GROUPING) === MF.GROUPING);
+        const masterName = s.attributes.friendly_name || master.split(".")[1];
+        let html = `<div class="group-title">Play on</div>`;
+        html += `<div class="group-row" data-master="1"><span class="gname master">${masterName}</span>
+          <span class="gcheck on">${this._checkIcon()}</span></div>`;
+        for (const ent of candidates) {
+            const st = this._hass.states[ent];
+            const nm = st.attributes.friendly_name || ent.split(".")[1];
+            const joined = grouped.includes(ent);
+            html += `<div class="group-row" data-ent="${ent}"><span class="gname">${nm}</span>
+              <span class="gcheck ${joined ? "on" : ""}">${joined ? this._checkIcon() : ""}</span></div>`;
+        }
+        if (!candidates.length) html += `<div class="group-row"><span class="gname" style="opacity:.6">No other groupable players</span></div>`;
+        panel.innerHTML = html;
+        panel.querySelectorAll(".group-row[data-ent]").forEach((row) => {
+            row.addEventListener("click", () => {
+                const ent = row.dataset.ent;
+                const joined = (s.attributes.group_members || []).includes(ent);
+                if (joined) this._hass.callService("media_player", "unjoin", { entity_id: ent });
+                else this._hass.callService("media_player", "join", { entity_id: master, group_members: [ent] });
+            });
+        });
+    }
+    _checkIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>`; }
 
     _renderArt() {
         const sr = this.shadowRoot;
@@ -576,10 +708,11 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
     // ── Services ────────────────────────────────────────────────────────────────
     _svc(service, data) {
         if (!this._hass || !this._config) return;
-        this._hass.callService("media_player", service, Object.assign({ entity_id: this._config.entity }, data || {}));
+        const ent = this._activeEntity || this._config.entity;
+        this._hass.callService("media_player", service, Object.assign({ entity_id: ent }, data || {}));
     }
     _moreInfo() {
-        const ev = new CustomEvent("hass-more-info", { detail: { entityId: this._config.entity }, bubbles: true, composed: true });
+        const ev = new CustomEvent("hass-more-info", { detail: { entityId: this._activeEntity || this._config.entity }, bubbles: true, composed: true });
         this.dispatchEvent(ev);
     }
 }
@@ -636,6 +769,11 @@ class NeumorphicMediaPlayerCardEditor extends HTMLElement {
     _toggleSection(id) { this._sections[id] = !this._sections[id]; const h = this.shadowRoot.querySelector(`[data-sec="${id}"]`); const b = this.shadowRoot.querySelector(`[data-secbody="${id}"]`); if (h) h.classList.toggle("collapsed", !!this._sections[id]); if (b) b.classList.toggle("hidden", !!this._sections[id]); }
     _sec(id, title, body) { const c = !!this._sections[id]; return `<div class="sec-hdr${c ? " collapsed" : ""}" data-sec="${id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>${title}</div><div class="sec-body${c ? " hidden" : ""}" data-secbody="${id}">${body}</div>`; }
     _entityPicker() { const v = this._get("entity"); if (customElements.get("ha-entity-picker")) return `<ha-entity-picker id="entity_picker" data-path="entity" .value="${v}" value="${v}" include-domains='["media_player"]' allow-custom-entity></ha-entity-picker>`; return `<input type="text" data-path="entity" value="${String(v).replace(/"/g, "&quot;")}" placeholder="media_player.living_room">`; }
+    _entitiesText() {
+        const list = this._config.entities;
+        if (!Array.isArray(list)) return "";
+        return list.map((e) => (typeof e === "string" ? e : (e && e.entity) || "")).filter(Boolean).join("\n").replace(/</g, "&lt;");
+    }
     _text(path, lbl, ph = "") { return `<div class="field"><label>${lbl}</label><input type="text" data-path="${path}" value="${String(this._get(path, "")).replace(/"/g, "&quot;")}" placeholder="${ph}"></div>`; }
     _range(path, lbl, min, max, step, suffix = "", def = min) { const v = Number(this._get(path, def)); return `<div class="field"><label>${lbl}</label><div class="range-wrap"><input type="range" data-path="${path}" value="${v}" min="${min}" max="${max}" step="${step}" data-suffix="${suffix}"><span class="range-val" data-rv="${path}">${v}${suffix}</span></div></div>`; }
     _select(path, lbl, opts) { const cur = String(this._get(path, opts[0].value)); return `<div class="field"><label>${lbl}</label><select data-path="${path}">${opts.map((o) => `<option value="${o.value}"${cur === o.value ? " selected" : ""}>${o.label}</option>`).join("")}</select></div>`; }
@@ -648,9 +786,13 @@ class NeumorphicMediaPlayerCardEditor extends HTMLElement {
     _render() {
         const sr = this.shadowRoot;
         const html = `
-      ${this._sec("entity", "🎵 Media Player", `<div class="field"><label>Entity (media_player.*)</label>${this._entityPicker()}</div>${this._text("name", "Header label", "Playing")}`)}
+      ${this._sec("entity", "🎵 Media Player", `<div class="field"><label>Primary entity (media_player.*)</label>${this._entityPicker()}</div>
+        <div class="field"><label>Additional players for the switcher (one per line)</label>
+        <textarea data-path="__entities__" placeholder="media_player.kitchen&#10;media_player.bedroom" style="width:100%;min-height:60px;padding:8px 10px;border-radius:6px;border:1px solid var(--divider-color,#d1d5db);background:var(--card-background-color,#fff);color:var(--primary-text-color,#111);font-size:12px;font-family:monospace;box-sizing:border-box;">${this._entitiesText()}</textarea>
+        <small class="font-hint">The primary entity plus these appear as switch chips. Leave blank for a single player.</small></div>
+        ${this._text("name", "Header label", "Playing")}`)}
       ${this._sec("layout", "📐 Layout", `${this._range("card_size", "Card width (px)", 260, 460, 10, "px", 340)}${this._select("art_shape", "Album art shape", [{ value: "circle", label: "Circle" }, { value: "squircle", label: "Squircle" }, { value: "square", label: "Square" }])}${this._toggle("spin_art", "Spin circular art while playing")}${this._toggle("no_border", "No border / transparent background")}${this._toggle("display_only", "Display only — hide controls")}`)}
-      ${this._sec("sections", "🎛 Sections", `${this._toggle("show_header", "Header row (back / label / menu)", true)}${this._toggle("show_progress", "Progress bar + times", true)}${this._toggle("show_volume", "Volume row")}${this._toggle("show_shuffle_repeat", "Shuffle / repeat row", true)}${this._toggle("show_source", "Source dropdown")}`)}
+      ${this._sec("sections", "🎛 Sections", `${this._toggle("show_player_switcher", "Player switcher chips", true)}${this._toggle("show_grouping", "Speaker grouping button", true)}${this._toggle("show_header", "Header row (back / label / menu)", true)}${this._toggle("show_progress", "Progress bar + times", true)}${this._toggle("show_volume", "Volume row")}${this._toggle("show_shuffle_repeat", "Shuffle / repeat row", true)}${this._toggle("show_source", "Source dropdown")}`)}
       ${this._sec("colors", "🎨 Colours", `${this._color("accent_color", "Accent (fill + play icon)", "#006666")}`)}
       ${this._sec("header_lbl", "𝗔 Header Label", this._labelBlock("header_label", true))}
       ${this._sec("title_lbl", "① Title", this._labelBlock("title_label", true))}
@@ -660,6 +802,14 @@ class NeumorphicMediaPlayerCardEditor extends HTMLElement {
         const div = document.createElement("div"); div.innerHTML = html;
         const ep = div.querySelector("#entity_picker");
         if (ep) { ep.hass = this._hass; ep.addEventListener("value-changed", (e) => this._set("entity", e.detail.value)); }
+        // Additional players textarea → entities array
+        div.querySelectorAll('textarea[data-path="__entities__"]').forEach((el) => {
+            el.addEventListener("change", () => {
+                const arr = el.value.split("\n").map((s) => s.trim()).filter(Boolean);
+                if (arr.length) this._config.entities = arr; else delete this._config.entities;
+                this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: Object.assign({}, this._config) }, bubbles: true, composed: true }));
+            });
+        });
         div.querySelectorAll('input[type=text][data-path="entity"]').forEach((el) => el.addEventListener("change", () => this._set("entity", el.value.trim() || undefined)));
         div.querySelectorAll("input[type=text][data-path]:not(.color-hex):not([data-font-custom]):not([data-path='entity'])").forEach((el) => {
             el.addEventListener("change", () => { let v = el.value; if (el.dataset.path.endsWith(".size") && v !== "" && /^\d+(\.\d+)?$/.test(v)) v = v + "px"; this._set(el.dataset.path, v === "" ? undefined : v); this._render(); });

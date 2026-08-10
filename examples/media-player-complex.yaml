@@ -1,15 +1,21 @@
 # Neumorphic Media Player — COMPLEX
 type: custom:neumorphic-media-player-card
-entity: media_player.living_room
+entity: media_player.living_room       # primary / default active player
+entities:                              # players offered by the switcher chips
+  - media_player.living_room
+  - media_player.kitchen
+  - media_player.bedroom
 name: Playing                # header centre label (or use header_label.text)
 card_size: 340               # px (260–460)
-accent_color: "#006666"      # progress fill + play icon
+accent_color: "#006666"      # progress fill + play icon + active chip
 art_shape: circle            # circle | squircle | square
 spin_art: false              # slowly rotate circular art while playing
 # ── Sections (buttons still only appear if the entity supports them) ──
+show_player_switcher: true   # chip row to switch which player the card controls
+show_grouping: true          # header cast icon → join/unjoin speakers
 show_header: true            # back / label / menu row
 show_progress: true          # progress bar + elapsed/total times
-show_volume: false           # volume slider + mute
+show_volume: true            # volume slider + mute
 show_shuffle_repeat: true    # shuffle / repeat row
 show_source: false           # source dropdown
 no_border: false
