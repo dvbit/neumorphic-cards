@@ -13,6 +13,7 @@ FILES=(
   dist/neumorphic-container-card.js
   dist/neumorphic-calendar-grid-card.js
   dist/neumorphic-climate-card.js
+  dist/neumorphic-media-player-card.js
 )
 cat > "$OUT" << 'HDR'
 /**

@@ -237,6 +237,31 @@ Several cards accept **label blocks** — nested objects that configure one piec
 
 ---
 
+## Neumorphic Media Player — `custom:neumorphic-media-player-card`
+
+[Simple](./examples/media-player-simple.yaml) · [Complex](./examples/media-player-complex.yaml)
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `entity` | — | **Required.** A `media_player.*` entity. |
+| `name` | `Playing` | Header centre label (or use `header_label.text`). |
+| `card_size` | `340` | Base width in px (260–460). |
+| `accent_color` | `#006666` | Progress fill and play-icon colour. |
+| `art_shape` | `circle` | `circle` \| `squircle` \| `square`. |
+| `spin_art` | `false` | Slowly rotate circular art while playing. |
+| `show_header` | `true` | Back / label / menu row. |
+| `show_progress` | `true` | Progress bar + elapsed/total times (needs `media_duration`). |
+| `show_volume` | `false` | Volume slider + mute (needs `VOLUME_SET`). |
+| `show_shuffle_repeat` | `true` | Shuffle / repeat row (needs those features). |
+| `show_source` | `false` | Source dropdown (needs `SELECT_SOURCE` + `source_list`). |
+| `no_border` | `false` | Transparent background, no card shadow. |
+| `display_only` | `false` | Art + info only; hides all controls. |
+| `header_label`, `title_label`, `artist_label` | — | Typography blocks (common schema). |
+
+Transport, seek, volume, shuffle, repeat, and source controls each appear only when the entity's `supported_features` advertises them. Buttons call the standard services (`media_play_pause`, `media_next_track`, `media_previous_track`, `media_seek`, `volume_set`, `volume_mute`, `shuffle_set`, `repeat_set`, `select_source`). The header buttons open the entity's more-info dialog.
+
+---
+
 ## Neumorphic Date Picker — `custom:datepicker-card`
 
 [Simple](./examples/datepicker-simple.yaml) · [Complex](./examples/datepicker-complex.yaml)

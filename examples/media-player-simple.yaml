@@ -1,0 +1,3 @@
+# Neumorphic Media Player — SIMPLE
+type: custom:neumorphic-media-player-card
+entity: media_player.living_room

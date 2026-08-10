@@ -1,0 +1,34 @@
+# Neumorphic Media Player — COMPLEX
+type: custom:neumorphic-media-player-card
+entity: media_player.living_room
+name: Playing                # header centre label (or use header_label.text)
+card_size: 340               # px (260–460)
+accent_color: "#006666"      # progress fill + play icon
+art_shape: circle            # circle | squircle | square
+spin_art: false              # slowly rotate circular art while playing
+# ── Sections (buttons still only appear if the entity supports them) ──
+show_header: true            # back / label / menu row
+show_progress: true          # progress bar + elapsed/total times
+show_volume: false           # volume slider + mute
+show_shuffle_repeat: true    # shuffle / repeat row
+show_source: false           # source dropdown
+no_border: false
+display_only: false          # true = art + info only, no controls
+# ── Typography (show / text / font / size / weight / color / transform / spacing) ──
+header_label:
+  font: Space Mono
+  size: 12px
+  weight: 700
+  transform: uppercase
+  spacing: 0.14em
+  color: "#6b7280"
+title_label:
+  font: Space Mono
+  size: 21px
+  weight: 700
+  color: "#1E2938"
+artist_label:
+  font: Space Mono
+  size: 13px
+  weight: 400
+  color: "#6b7280"
