@@ -102,6 +102,30 @@ function resolveIsDark(hass) {
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 function round1(v) { return Math.round(v * 10) / 10; }
 
+// Temperature → glow colour (continuous blue→cyan→amber→orange→red).
+const TEMP_STOPS = [
+    { t: 0.0, c: [74, 163, 223] },   // cold blue
+    { t: 0.28, c: [120, 200, 214] }, // cyan
+    { t: 0.5, c: [240, 214, 170] },  // neutral warm
+    { t: 0.72, c: [239, 157, 78] },  // orange
+    { t: 1.0, c: [226, 104, 95] },   // hot red
+];
+function tempColor(frac) {
+    frac = clamp(frac, 0, 1);
+    for (let i = 0; i < TEMP_STOPS.length - 1; i++) {
+        const a = TEMP_STOPS[i], b = TEMP_STOPS[i + 1];
+        if (frac >= a.t && frac <= b.t) {
+            const u = (frac - a.t) / (b.t - a.t);
+            const r = Math.round(a.c[0] + (b.c[0] - a.c[0]) * u);
+            const g = Math.round(a.c[1] + (b.c[1] - a.c[1]) * u);
+            const bl = Math.round(a.c[2] + (b.c[2] - a.c[2]) * u);
+            return `rgb(${r},${g},${bl})`;
+        }
+    }
+    const last = TEMP_STOPS[TEMP_STOPS.length - 1].c;
+    return `rgb(${last[0]},${last[1]},${last[2]})`;
+}
+
 // ── Typography helpers (shared pattern with the rest of the suite) ────────────
 function labelVisible(cfg) {
     if (cfg === undefined) return true;
@@ -162,6 +186,7 @@ class NeumorphicClimateCard extends HTMLElement {
         this._rawConfig = config;
         this._config = Object.assign({
             card_size: 320,
+            dial_style: "arc",
             show_current_as_primary: false,
             show_modes: true,
             show_presets: true,
@@ -456,6 +481,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const sr = this.shadowRoot;
         const wrap = sr.getElementById("dial-wrap");
         if (!wrap) return;
+        if (this._config.dial_style === "glow") { this._renderGlowDial(wrap); return; }
         const p = this._isDark ? C_DARK : C_LIGHT;
         const sc = this.SCALE;
         const S = 320; // internal viewBox units
@@ -545,6 +571,100 @@ class NeumorphicClimateCard extends HTMLElement {
             const down = (e) => this._onDown(e, svg, cx, cy);
             svg.addEventListener("mousedown", down);
             svg.addEventListener("touchstart", down, { passive: false });
+        }
+    }
+
+    // ── Glowing-disc dial: white raised disc casting a temperature-driven glow ──
+    _renderGlowDial(wrap) {
+        const p = this._isDark ? C_DARK : C_LIGHT;
+        const S = 320, cx = S / 2, cy = S / 2;
+        const discR = 118;
+        const uid = "ncgg";
+
+        const lo = this._minTemp, hi = this._maxTemp;
+        const target = clamp(this._target, lo, hi);
+        // Glow colour tracks the CURRENT room temperature (falls back to target).
+        const cur = this._current;
+        const glowBasis = cur !== null ? cur : target;
+        const glowFrac = (glowBasis - lo) / (hi - lo || 1);
+        const glow = tempColor(glowFrac);
+
+        // Numbers (disc shows target; small current beneath, per existing behaviour)
+        const dispTarget = round1(this._toDisplay(target));
+        const dispCur = cur === null ? null : round1(this._toDisplay(cur));
+        const unit = this._dispUnit();
+        const primaryIsCurrent = this._config.show_current_as_primary && dispCur !== null;
+        const bigVal = primaryIsCurrent ? dispCur : dispTarget;
+        const smallVal = primaryIsCurrent ? dispTarget : dispCur;
+
+        const discFill = this._isDark ? "#2a2f37" : "#fdfdfd";
+        const off = this._stateObj && this._stateObj.state === "off";
+        const glowOpacity = off ? 0.12 : 0.95;
+
+        let centerHTML;
+        if (this._isRange) {
+            const tlo = round1(this._toDisplay(Number(this._attr("target_temp_low"))));
+            const thi = round1(this._toDisplay(Number(this._attr("target_temp_high"))));
+            centerHTML = `<div class="range-row"><span class="t-primary">${tlo}</span><span class="t-primary">${thi}</span></div>
+              ${dispCur !== null ? `<div class="t-secondary">${dispCur}${unit}</div>` : ""}`;
+        } else {
+            centerHTML = `<div class="t-primary">${bigVal}<span class="t-unit">${unit}</span></div>
+              ${smallVal !== null && smallVal !== undefined ? `<div class="t-secondary">${smallVal}${unit}</div>` : ""}`;
+        }
+
+        wrap.innerHTML = `
+      <svg viewBox="0 0 ${S} ${S}" role="img" aria-label="temperature">
+        <defs>
+          <radialGradient id="${uid}-glow" cx="50%" cy="52%" r="50%">
+            <stop offset="55%" stop-color="${glow}" stop-opacity="0"/>
+            <stop offset="82%" stop-color="${glow}" stop-opacity="${0.55 * glowOpacity}"/>
+            <stop offset="93%" stop-color="${glow}" stop-opacity="${0.9 * glowOpacity}"/>
+            <stop offset="100%" stop-color="${glow}" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="${uid}-disc" cx="42%" cy="36%" r="72%">
+            <stop offset="0%" stop-color="${discFill}"/>
+            <stop offset="78%" stop-color="${discFill}"/>
+            <stop offset="100%" stop-color="${this._isDark ? "#252a31" : "#f1efee"}"/>
+          </radialGradient>
+          <filter id="${uid}-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="9"/>
+          </filter>
+          <filter id="${uid}-lift" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="7" stdDeviation="12" flood-color="${p.shadowDark}" flood-opacity="0.5"/>
+            <feDropShadow dx="0" dy="-2" stdDeviation="6" flood-color="${p.shadowLight}" flood-opacity="0.8"/>
+          </filter>
+        </defs>
+
+        <!-- coloured glow halo behind the disc -->
+        <circle cx="${cx}" cy="${cy + 6}" r="${discR + 20}" fill="url(#${uid}-glow)" filter="url(#${uid}-blur)"/>
+        <!-- crisp warm rim just under the disc edge -->
+        <circle cx="${cx}" cy="${cy}" r="${discR + 2}" fill="none" stroke="${glow}" stroke-width="3" opacity="${off ? 0.15 : 0.85}" filter="url(#${uid}-blur)"/>
+        <!-- floating white disc -->
+        <circle cx="${cx}" cy="${cy}" r="${discR}" fill="url(#${uid}-disc)" filter="url(#${uid}-lift)"/>
+      </svg>
+      <div class="dial-center">${centerHTML}</div>`;
+
+        const primaryEls = wrap.querySelectorAll(".t-primary");
+        primaryEls.forEach((el) => applyTypography(el, this._config.primary_label));
+        const secEl = wrap.querySelector(".t-secondary");
+        if (secEl) applyTypography(secEl, this._config.secondary_label);
+
+        // Whole disc is tappable to nudge target up (tap top) / down (tap bottom)
+        // when interactive — a lightweight control since there's no ring to drag.
+        if (!this._config.display_only) {
+            const svg = wrap.querySelector("svg");
+            svg.style.cursor = "pointer";
+            svg.addEventListener("click", (e) => {
+                const rect = svg.getBoundingClientRect();
+                const y = (e.clientY - rect.top) / rect.height;
+                const step = this._step || 0.5;
+                let val = target + (y < 0.5 ? step : -step);
+                val = clamp(round1(val), lo, hi);
+                this._pendingTarget = val;
+                this._renderDial();
+                this._svc ? null : null;
+                this._commitSet(val);
+            });
         }
     }
 
@@ -940,6 +1060,7 @@ class NeumorphicClimateCardEditor extends HTMLElement {
         ${this._text("name", "Name (optional)", "Friendly name override")}
       `)}
       ${this._sec("layout", "📐 Layout", `
+        ${this._select("dial_style", "Dial style", [{ value: "arc", label: "Gradient arc (ring + handle)" }, { value: "glow", label: "Glowing disc (temperature glow)" }])}
         ${this._range("card_size", "Card width (px)", 240, 520, 10, "px", 320)}
         ${this._toggle("show_current_as_primary", "Show current temp as primary")}
         ${this._toggle("show_unit_toggle", "Show °F/°C toggle")}

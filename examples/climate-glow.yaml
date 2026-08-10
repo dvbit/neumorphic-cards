@@ -1,0 +1,10 @@
+# Neumorphic Climate — GLOWING DISC style
+# A white disc floating above the surface, casting a glow whose colour tracks
+# the CURRENT room temperature (blue = cold → amber → red = hot).
+type: custom:neumorphic-climate-card
+entity: climate.living_room
+dial_style: glow           # arc (default) | glow
+card_size: 340
+show_status_pill: true
+# The glow colour is automatic (driven by current_temperature). Everything else
+# — controls, typography, etc. — works exactly as in the arc style.

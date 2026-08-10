@@ -224,6 +224,7 @@ Several cards accept **label blocks** — nested objects that configure one piec
 |-----|---------|-------------|
 | `entity` | — | **Required.** A `climate.*` entity. |
 | `name` | friendly name | Header title override. |
+| `dial_style` | `arc` | `arc` (gradient ring + handle) \| `glow` (white disc with a temperature-driven glow). |
 | `card_size` | `320` | px (240–520). |
 | `show_current_as_primary` | `false` | Current temp big, target small. |
 | `show_unit_toggle` | `false` | °F/°C display toggle (visual only). |

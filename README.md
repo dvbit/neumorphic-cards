@@ -117,7 +117,9 @@ secondary_label:
   color: "#c3c9d2"
 ```
 
-Full commented examples are in [`examples/`](./examples): [climate-simple.yaml](./examples/climate-simple.yaml) and [climate-full.yaml](./examples/climate-full.yaml).
+Full commented examples are in [`examples/`](./examples): [climate-simple.yaml](./examples/climate-simple.yaml) and [climate-full.yaml](./examples/climate-full.yaml). A glowing-disc variant is in [climate-glow.yaml](./examples/climate-glow.yaml).
+
+The card offers two dial styles via `dial_style`: the default **`arc`** (a gradient ring with a draggable handle) and **`glow`** — a white disc floating above the surface casting a glow whose colour tracks the current room temperature (blue = cold, through amber, to red = hot).
 
 Drag or tap the gradient ring to set the target temperature. Buttons for HVAC modes, presets, fan, and swing appear automatically for whatever the entity supports. The green pill beneath the dial shows the current HVAC action — tap it to toggle power.
 
