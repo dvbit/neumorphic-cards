@@ -5872,6 +5872,38 @@ const MONTHS = [
 ];
 const WD_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WD_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// ── i18n (runtime strings; auto-detected from hass.language, fallback en) ─────
+const CAL_I18N = {
+    en: { no_events: "No events", all_day: "All day", select_day: "Select a day to see events" },
+    it: { no_events: "Nessun evento", all_day: "Tutto il giorno", select_day: "Seleziona un giorno per vedere gli eventi" },
+    es: { no_events: "Sin eventos", all_day: "Todo el día", select_day: "Selecciona un día para ver los eventos" },
+    fr: { no_events: "Aucun événement", all_day: "Toute la journée", select_day: "Sélectionnez un jour pour voir les événements" },
+    de: { no_events: "Keine Termine", all_day: "Ganztägig", select_day: "Wähle einen Tag, um Termine zu sehen" },
+};
+function calLocale(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || undefined;
+    return l || undefined; // undefined = browser default in toLocale*/Intl
+}
+function calLang(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || "en";
+    const base = String(l).toLowerCase().split("-")[0];
+    return CAL_I18N[base] ? base : "en";
+}
+// Locale-aware month name (0-indexed) and short weekday names.
+function localeMonth(locale, monthIdx) {
+    try { return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2021, monthIdx, 1)); }
+    catch (_a) { return ["January","February","March","April","May","June","July","August","September","October","November","December"][monthIdx]; }
+}
+function localeWeekdays(locale, sundayFirst) {
+    try {
+        const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
+        // 2021-08-01 is a Sunday.
+        const out = [];
+        for (let i = 0; i < 7; i++) out.push(fmt.format(new Date(2021, 7, 1 + i)));
+        return sundayFirst ? out : out.slice(1).concat(out.slice(0, 1));
+    } catch (_a) { return sundayFirst ? WD_SUN : WD_MON; }
+}
 function ymd(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -6359,14 +6391,14 @@ class NeumorphicCalendarGridCard extends HTMLElement {
                     titleEl.textContent = custom;
                 }
                 else {
-                    titleEl.innerHTML = `${MONTHS[this._viewMonth]}<span class="cal-year">${this._viewYear}</span>`;
+                    titleEl.innerHTML = `${localeMonth(calLocale(this._hass), this._viewMonth)}<span class="cal-year">${this._viewYear}</span>`;
                 }
                 applyTypography(titleEl, this._config.title_label);
             }
         }
         const weekRow = sr.getElementById("weekday-row");
         if (weekRow) {
-            const names = this._config.first_day === "sunday" ? WD_SUN : WD_MON;
+            const names = localeWeekdays(calLocale(this._hass), this._config.first_day === "sunday");
             let html = this._config.show_week_numbers ? `<div class="weekday wk-corner"></div>` : "";
             html += names.map((n) => `<div class="weekday">${n}</div>`).join("");
             weekRow.innerHTML = html;
@@ -6461,7 +6493,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         agenda.classList.remove("hidden");
         const sel = this._selected;
         if (!sel) {
-            agenda.innerHTML = `<div class="agenda-empty">Select a day to see events</div>`;
+            agenda.innerHTML = `<div class="agenda-empty">${CAL_I18N[calLang(this._hass)].select_day}</div>`;
             return;
         }
         const heading = sel.toLocaleDateString(undefined, {
@@ -6472,7 +6504,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         const key = ymd(sel);
         const evs = (_b = this._eventsByDay.get(key)) !== null && _b !== void 0 ? _b : [];
         if (evs.length === 0) {
-            html += `<div class="agenda-empty">No events</div>`;
+            html += `<div class="agenda-empty">${CAL_I18N[calLang(this._hass)].no_events}</div>`;
         }
         else {
             html += `<div class="agenda-list">`;
@@ -6500,7 +6532,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         var _a, _b, _c, _d;
         const isAllDay = !!((_a = ev.start) === null || _a === void 0 ? void 0 : _a.date) && !((_b = ev.start) === null || _b === void 0 ? void 0 : _b.dateTime);
         if (isAllDay)
-            return "All day";
+            return CAL_I18N[calLang(this._hass)].all_day;
         const s = (_c = ev.start) === null || _c === void 0 ? void 0 : _c.dateTime;
         const e = (_d = ev.end) === null || _d === void 0 ? void 0 : _d.dateTime;
         if (!s)
@@ -6923,6 +6955,30 @@ const HVAC_LABEL = {
     off: "Off", heat: "Heat", cool: "Cool", heat_cool: "Heat/Cool",
     auto: "Auto", dry: "Dry", fan_only: "Fan",
 };
+
+// ── i18n (runtime strings; auto-detected from hass.language, fallback en) ─────
+const I18N = {
+    en: { Mode: "Mode", Preset: "Preset", Fan: "Fan", Swing: "Swing", Humidity: "Humidity",
+          off: "Off", heat: "Heat", cool: "Cool", heat_cool: "Heat/Cool", auto: "Auto", dry: "Dry", fan_only: "Fan",
+          idle: "Idle", heating: "Heating", cooling: "Cooling", drying: "Drying", fan: "Fan", preheating: "Preheating" },
+    it: { Mode: "Modalità", Preset: "Preset", Fan: "Ventola", Swing: "Oscillazione", Humidity: "Umidità",
+          off: "Spento", heat: "Riscald.", cool: "Raffresc.", heat_cool: "Auto caldo/freddo", auto: "Auto", dry: "Deumid.", fan_only: "Ventola",
+          idle: "Inattivo", heating: "Riscaldamento", cooling: "Raffreddamento", drying: "Deumidificazione", fan: "Ventola", preheating: "Preriscaldamento" },
+    es: { Mode: "Modo", Preset: "Preajuste", Fan: "Ventilador", Swing: "Oscilación", Humidity: "Humedad",
+          off: "Apagado", heat: "Calor", cool: "Frío", heat_cool: "Calor/Frío", auto: "Auto", dry: "Secar", fan_only: "Ventilador",
+          idle: "Inactivo", heating: "Calentando", cooling: "Enfriando", drying: "Secando", fan: "Ventilador", preheating: "Precalentando" },
+    fr: { Mode: "Mode", Preset: "Préréglage", Fan: "Ventil.", Swing: "Oscillation", Humidity: "Humidité",
+          off: "Éteint", heat: "Chauffage", cool: "Clim.", heat_cool: "Chaud/Froid", auto: "Auto", dry: "Séchage", fan_only: "Ventil.",
+          idle: "Inactif", heating: "Chauffage", cooling: "Refroid.", drying: "Séchage", fan: "Ventil.", preheating: "Préchauffage" },
+    de: { Mode: "Modus", Preset: "Voreinst.", Fan: "Lüfter", Swing: "Schwenken", Humidity: "Luftfeuchte",
+          off: "Aus", heat: "Heizen", cool: "Kühlen", heat_cool: "Heizen/Kühlen", auto: "Auto", dry: "Trocknen", fan_only: "Lüfter",
+          idle: "Inaktiv", heating: "Heizt", cooling: "Kühlt", drying: "Trocknet", fan: "Lüfter", preheating: "Vorheizen" },
+};
+function langOf(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || "en";
+    const base = String(l).toLowerCase().split("-")[0];
+    return I18N[base] ? base : "en";
+}
 
 function resolveIsDark(hass) {
     var _a, _b, _c, _d;
@@ -7393,7 +7449,7 @@ class NeumorphicClimateCard extends HTMLElement {
         pill.className = "status-pill";
         // hvac_action drives colour/label; fall back to state.
         const action = s.attributes.hvac_action || (s.state === "off" ? "off" : "idle");
-        const label = this._cap(action);
+        const label = this._t(action);
         // Power icon (thermometer-like) — matches the reference's little glyph.
         const icon = `<svg viewBox="0 0 24 24"><path d="M13 4a3 3 0 00-6 0v7.5a5 5 0 106 0V4zm-3 14a3 3 0 01-1-5.8V4a1 1 0 012 0v8.2A3 3 0 0110 18z"/></svg>`;
         pill.innerHTML = `<button class="pill ${action}" id="pill-btn" title="${label}">${icon}<span>${label}</span></button>`;
@@ -7446,10 +7502,10 @@ class NeumorphicClimateCard extends HTMLElement {
         // HVAC modes
         const modes = this._attr("hvac_modes", []);
         if (cfg.show_modes && Array.isArray(modes) && modes.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Mode</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Mode")}</div><div class="chips">`;
             html += modes.map((m) => {
                 const icon = HVAC_ICON[m] ? `<svg viewBox="0 0 24 24"><path d="${HVAC_ICON[m]}"/></svg>` : "";
-                const lbl = HVAC_LABEL[m] || m;
+                const lbl = this._t(m) || HVAC_LABEL[m] || m;
                 const active = s.state === m ? `active m-${m}` : "";
                 return `<button class="chip ${active}" data-kind="hvac" data-val="${m}" title="${lbl}">${icon}<span>${lbl}</span></button>`;
             }).join("");
@@ -7460,7 +7516,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const presets = this._attr("preset_modes", []);
         const curPreset = this._attr("preset_mode");
         if (cfg.show_presets && Array.isArray(presets) && presets.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Preset</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Preset")}</div><div class="chips">`;
             html += presets.map((m) => {
                 const active = curPreset === m ? "active" : "";
                 return `<button class="chip ${active}" data-kind="preset" data-val="${m}">${this._cap(m)}</button>`;
@@ -7472,7 +7528,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const fans = this._attr("fan_modes", []);
         const curFan = this._attr("fan_mode");
         if (cfg.show_fan && Array.isArray(fans) && fans.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Fan</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Fan")}</div><div class="chips">`;
             html += fans.map((m) => {
                 const active = curFan === m ? "active" : "";
                 return `<button class="chip ${active}" data-kind="fan" data-val="${m}">${this._cap(m)}</button>`;
@@ -7484,7 +7540,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const swings = this._attr("swing_modes", []);
         const curSwing = this._attr("swing_mode");
         if (cfg.show_swing && Array.isArray(swings) && swings.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Swing</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Swing")}</div><div class="chips">`;
             html += swings.map((m) => {
                 const active = curSwing === m ? "active" : "";
                 return `<button class="chip ${active}" data-kind="swing" data-val="${m}">${this._cap(m)}</button>`;
@@ -7495,7 +7551,7 @@ class NeumorphicClimateCard extends HTMLElement {
         // Humidity
         const hum = this._attr("current_humidity");
         if (cfg.show_humidity && hum !== undefined) {
-            html += `<div class="humidity"><span>Humidity</span><span>${hum}%</span></div>`;
+            html += `<div class="humidity"><span>${this._t("Humidity")}</span><span>${hum}%</span></div>`;
         }
 
         wrap.innerHTML = html;
@@ -7514,6 +7570,10 @@ class NeumorphicClimateCard extends HTMLElement {
     }
 
     _cap(s) { return typeof s === "string" ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : s; }
+    _t(key) {
+        const lang = langOf(this._hass);
+        return (I18N[lang] && I18N[lang][key]) || (I18N.en[key]) || this._cap(key);
+    }
 
     // ── Interaction: dial drag ────────────────────────────────────────────────
     _onDown(e, svg, cx, cy) {
@@ -7977,6 +8037,20 @@ const FONT_PRESETS = [
 ];
 const WEB_SAFE = new Set(["", "system-ui", "Arial", "Georgia", "monospace", "serif", "sans-serif"]);
 
+// ── i18n (runtime strings; auto-detected from hass.language, fallback en) ─────
+const MP_I18N = {
+    en: { Playing: "Playing", Paused: "Paused", Buffering: "Buffering", Idle: "Idle", Off: "Off", unavailable: "unavailable", play_on: "Play on", no_group: "No other groupable players" },
+    it: { Playing: "In riproduzione", Paused: "In pausa", Buffering: "Buffering", Idle: "Inattivo", Off: "Spento", unavailable: "non disponibile", play_on: "Riproduci su", no_group: "Nessun altro lettore raggruppabile" },
+    es: { Playing: "Reproduciendo", Paused: "En pausa", Buffering: "Cargando", Idle: "Inactivo", Off: "Apagado", unavailable: "no disponible", play_on: "Reproducir en", no_group: "No hay otros reproductores agrupables" },
+    fr: { Playing: "Lecture", Paused: "En pause", Buffering: "Mise en mémoire", Idle: "Inactif", Off: "Éteint", unavailable: "indisponible", play_on: "Lire sur", no_group: "Aucun autre lecteur groupable" },
+    de: { Playing: "Wiedergabe", Paused: "Pausiert", Buffering: "Puffern", Idle: "Inaktiv", Off: "Aus", unavailable: "nicht verfügbar", play_on: "Abspielen auf", no_group: "Keine weiteren gruppierbaren Player" },
+};
+function mpLang(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || "en";
+    const base = String(l).toLowerCase().split("-")[0];
+    return MP_I18N[base] ? base : "en";
+}
+
 function fmtTime(sec) {
     if (sec == null || isNaN(sec) || sec < 0) return "0:00";
     sec = Math.floor(sec);
@@ -8324,7 +8398,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
 
         if (!s) {
             const t = sr.getElementById("mp-title"); if (t) t.textContent = cfg.entity || "Unavailable";
-            const a = sr.getElementById("mp-artist"); if (a) a.textContent = "unavailable";
+            const a = sr.getElementById("mp-artist"); if (a) a.textContent = this._t("unavailable");
             ["mp-progress", "mp-transport", "mp-extras", "mp-volume", "mp-source", "mp-group-panel"].forEach((id) => { const e = sr.getElementById(id); if (e) e.classList.add("hidden"); });
             return;
         }
@@ -8345,8 +8419,12 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         this._renderSource();
     }
 
+    _t(key) {
+        const lang = mpLang(this._hass);
+        return (MP_I18N[lang] && MP_I18N[lang][key]) || MP_I18N.en[key] || key;
+    }
     _stateVerb(state) {
-        return state === "playing" ? "Playing" : state === "paused" ? "Paused" : state === "buffering" ? "Buffering" : state === "idle" ? "Idle" : "Playing";
+        return state === "playing" ? this._t("Playing") : state === "paused" ? this._t("Paused") : state === "buffering" ? this._t("Buffering") : state === "idle" ? this._t("Idle") : this._t("Playing");
     }
 
     _renderOff() {
@@ -8357,7 +8435,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         const a = sr.getElementById("mp-artist"); if (a) a.textContent = "";
         let note = sr.getElementById("mp-offnote");
         if (!note) { note = document.createElement("div"); note.id = "mp-offnote"; note.className = "off-note"; meta.appendChild(note); }
-        note.innerHTML = `Off &middot; <button class="hbtn" id="mp-poweron" style="display:inline-flex;vertical-align:middle" aria-label="Turn on">${this._powerIcon()}</button>`;
+        note.innerHTML = `${this._t("Off")} &middot; <button class="hbtn" id="mp-poweron" style="display:inline-flex;vertical-align:middle" aria-label="Turn on">${this._powerIcon()}</button>`;
         const btn = note.querySelector("#mp-poweron");
         if (btn && this._supports(MF.TURN_ON)) btn.addEventListener("click", () => this._svc("turn_on"));
     }
@@ -8412,7 +8490,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             .filter((e) => e.startsWith("media_player.") && e !== master)
             .filter((e) => (Number(this._hass.states[e].attributes.supported_features || 0) & MF.GROUPING) === MF.GROUPING);
         const masterName = s.attributes.friendly_name || master.split(".")[1];
-        let html = `<div class="group-title">Play on</div>`;
+        let html = `<div class="group-title">${this._t("play_on")}</div>`;
         html += `<div class="group-row" data-master="1"><span class="gname master">${masterName}</span>
           <span class="gcheck on">${this._checkIcon()}</span></div>`;
         for (const ent of candidates) {
@@ -8422,7 +8500,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             html += `<div class="group-row" data-ent="${ent}"><span class="gname">${nm}</span>
               <span class="gcheck ${joined ? "on" : ""}">${joined ? this._checkIcon() : ""}</span></div>`;
         }
-        if (!candidates.length) html += `<div class="group-row"><span class="gname" style="opacity:.6">No other groupable players</span></div>`;
+        if (!candidates.length) html += `<div class="group-row"><span class="gname" style="opacity:.6">${this._t("no_group")}</span></div>`;
         panel.innerHTML = html;
         panel.querySelectorAll(".group-row[data-ent]").forEach((row) => {
             row.addEventListener("click", () => {

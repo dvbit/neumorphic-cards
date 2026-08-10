@@ -114,6 +114,38 @@ const MONTHS = [
 ];
 const WD_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WD_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// ── i18n (runtime strings; auto-detected from hass.language, fallback en) ─────
+const CAL_I18N = {
+    en: { no_events: "No events", all_day: "All day", select_day: "Select a day to see events" },
+    it: { no_events: "Nessun evento", all_day: "Tutto il giorno", select_day: "Seleziona un giorno per vedere gli eventi" },
+    es: { no_events: "Sin eventos", all_day: "Todo el día", select_day: "Selecciona un día para ver los eventos" },
+    fr: { no_events: "Aucun événement", all_day: "Toute la journée", select_day: "Sélectionnez un jour pour voir les événements" },
+    de: { no_events: "Keine Termine", all_day: "Ganztägig", select_day: "Wähle einen Tag, um Termine zu sehen" },
+};
+function calLocale(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || undefined;
+    return l || undefined; // undefined = browser default in toLocale*/Intl
+}
+function calLang(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || "en";
+    const base = String(l).toLowerCase().split("-")[0];
+    return CAL_I18N[base] ? base : "en";
+}
+// Locale-aware month name (0-indexed) and short weekday names.
+function localeMonth(locale, monthIdx) {
+    try { return new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2021, monthIdx, 1)); }
+    catch (_a) { return ["January","February","March","April","May","June","July","August","September","October","November","December"][monthIdx]; }
+}
+function localeWeekdays(locale, sundayFirst) {
+    try {
+        const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
+        // 2021-08-01 is a Sunday.
+        const out = [];
+        for (let i = 0; i < 7; i++) out.push(fmt.format(new Date(2021, 7, 1 + i)));
+        return sundayFirst ? out : out.slice(1).concat(out.slice(0, 1));
+    } catch (_a) { return sundayFirst ? WD_SUN : WD_MON; }
+}
 function ymd(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -601,14 +633,14 @@ class NeumorphicCalendarGridCard extends HTMLElement {
                     titleEl.textContent = custom;
                 }
                 else {
-                    titleEl.innerHTML = `${MONTHS[this._viewMonth]}<span class="cal-year">${this._viewYear}</span>`;
+                    titleEl.innerHTML = `${localeMonth(calLocale(this._hass), this._viewMonth)}<span class="cal-year">${this._viewYear}</span>`;
                 }
                 applyTypography(titleEl, this._config.title_label);
             }
         }
         const weekRow = sr.getElementById("weekday-row");
         if (weekRow) {
-            const names = this._config.first_day === "sunday" ? WD_SUN : WD_MON;
+            const names = localeWeekdays(calLocale(this._hass), this._config.first_day === "sunday");
             let html = this._config.show_week_numbers ? `<div class="weekday wk-corner"></div>` : "";
             html += names.map((n) => `<div class="weekday">${n}</div>`).join("");
             weekRow.innerHTML = html;
@@ -703,7 +735,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         agenda.classList.remove("hidden");
         const sel = this._selected;
         if (!sel) {
-            agenda.innerHTML = `<div class="agenda-empty">Select a day to see events</div>`;
+            agenda.innerHTML = `<div class="agenda-empty">${CAL_I18N[calLang(this._hass)].select_day}</div>`;
             return;
         }
         const heading = sel.toLocaleDateString(undefined, {
@@ -714,7 +746,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         const key = ymd(sel);
         const evs = (_b = this._eventsByDay.get(key)) !== null && _b !== void 0 ? _b : [];
         if (evs.length === 0) {
-            html += `<div class="agenda-empty">No events</div>`;
+            html += `<div class="agenda-empty">${CAL_I18N[calLang(this._hass)].no_events}</div>`;
         }
         else {
             html += `<div class="agenda-list">`;
@@ -742,7 +774,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         var _a, _b, _c, _d;
         const isAllDay = !!((_a = ev.start) === null || _a === void 0 ? void 0 : _a.date) && !((_b = ev.start) === null || _b === void 0 ? void 0 : _b.dateTime);
         if (isAllDay)
-            return "All day";
+            return CAL_I18N[calLang(this._hass)].all_day;
         const s = (_c = ev.start) === null || _c === void 0 ? void 0 : _c.dateTime;
         const e = (_d = ev.end) === null || _d === void 0 ? void 0 : _d.dateTime;
         if (!s)

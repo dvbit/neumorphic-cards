@@ -66,6 +66,30 @@ const HVAC_LABEL = {
     auto: "Auto", dry: "Dry", fan_only: "Fan",
 };
 
+// ── i18n (runtime strings; auto-detected from hass.language, fallback en) ─────
+const I18N = {
+    en: { Mode: "Mode", Preset: "Preset", Fan: "Fan", Swing: "Swing", Humidity: "Humidity",
+          off: "Off", heat: "Heat", cool: "Cool", heat_cool: "Heat/Cool", auto: "Auto", dry: "Dry", fan_only: "Fan",
+          idle: "Idle", heating: "Heating", cooling: "Cooling", drying: "Drying", fan: "Fan", preheating: "Preheating" },
+    it: { Mode: "Modalità", Preset: "Preset", Fan: "Ventola", Swing: "Oscillazione", Humidity: "Umidità",
+          off: "Spento", heat: "Riscald.", cool: "Raffresc.", heat_cool: "Auto caldo/freddo", auto: "Auto", dry: "Deumid.", fan_only: "Ventola",
+          idle: "Inattivo", heating: "Riscaldamento", cooling: "Raffreddamento", drying: "Deumidificazione", fan: "Ventola", preheating: "Preriscaldamento" },
+    es: { Mode: "Modo", Preset: "Preajuste", Fan: "Ventilador", Swing: "Oscilación", Humidity: "Humedad",
+          off: "Apagado", heat: "Calor", cool: "Frío", heat_cool: "Calor/Frío", auto: "Auto", dry: "Secar", fan_only: "Ventilador",
+          idle: "Inactivo", heating: "Calentando", cooling: "Enfriando", drying: "Secando", fan: "Ventilador", preheating: "Precalentando" },
+    fr: { Mode: "Mode", Preset: "Préréglage", Fan: "Ventil.", Swing: "Oscillation", Humidity: "Humidité",
+          off: "Éteint", heat: "Chauffage", cool: "Clim.", heat_cool: "Chaud/Froid", auto: "Auto", dry: "Séchage", fan_only: "Ventil.",
+          idle: "Inactif", heating: "Chauffage", cooling: "Refroid.", drying: "Séchage", fan: "Ventil.", preheating: "Préchauffage" },
+    de: { Mode: "Modus", Preset: "Voreinst.", Fan: "Lüfter", Swing: "Schwenken", Humidity: "Luftfeuchte",
+          off: "Aus", heat: "Heizen", cool: "Kühlen", heat_cool: "Heizen/Kühlen", auto: "Auto", dry: "Trocknen", fan_only: "Lüfter",
+          idle: "Inaktiv", heating: "Heizt", cooling: "Kühlt", drying: "Trocknet", fan: "Lüfter", preheating: "Vorheizen" },
+};
+function langOf(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || "en";
+    const base = String(l).toLowerCase().split("-")[0];
+    return I18N[base] ? base : "en";
+}
+
 function resolveIsDark(hass) {
     var _a, _b, _c, _d;
     if (((_a = hass === null || hass === void 0 ? void 0 : hass.themes) === null || _a === void 0 ? void 0 : _a.darkMode) === true) return true;
@@ -535,7 +559,7 @@ class NeumorphicClimateCard extends HTMLElement {
         pill.className = "status-pill";
         // hvac_action drives colour/label; fall back to state.
         const action = s.attributes.hvac_action || (s.state === "off" ? "off" : "idle");
-        const label = this._cap(action);
+        const label = this._t(action);
         // Power icon (thermometer-like) — matches the reference's little glyph.
         const icon = `<svg viewBox="0 0 24 24"><path d="M13 4a3 3 0 00-6 0v7.5a5 5 0 106 0V4zm-3 14a3 3 0 01-1-5.8V4a1 1 0 012 0v8.2A3 3 0 0110 18z"/></svg>`;
         pill.innerHTML = `<button class="pill ${action}" id="pill-btn" title="${label}">${icon}<span>${label}</span></button>`;
@@ -588,10 +612,10 @@ class NeumorphicClimateCard extends HTMLElement {
         // HVAC modes
         const modes = this._attr("hvac_modes", []);
         if (cfg.show_modes && Array.isArray(modes) && modes.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Mode</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Mode")}</div><div class="chips">`;
             html += modes.map((m) => {
                 const icon = HVAC_ICON[m] ? `<svg viewBox="0 0 24 24"><path d="${HVAC_ICON[m]}"/></svg>` : "";
-                const lbl = HVAC_LABEL[m] || m;
+                const lbl = this._t(m) || HVAC_LABEL[m] || m;
                 const active = s.state === m ? `active m-${m}` : "";
                 return `<button class="chip ${active}" data-kind="hvac" data-val="${m}" title="${lbl}">${icon}<span>${lbl}</span></button>`;
             }).join("");
@@ -602,7 +626,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const presets = this._attr("preset_modes", []);
         const curPreset = this._attr("preset_mode");
         if (cfg.show_presets && Array.isArray(presets) && presets.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Preset</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Preset")}</div><div class="chips">`;
             html += presets.map((m) => {
                 const active = curPreset === m ? "active" : "";
                 return `<button class="chip ${active}" data-kind="preset" data-val="${m}">${this._cap(m)}</button>`;
@@ -614,7 +638,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const fans = this._attr("fan_modes", []);
         const curFan = this._attr("fan_mode");
         if (cfg.show_fan && Array.isArray(fans) && fans.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Fan</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Fan")}</div><div class="chips">`;
             html += fans.map((m) => {
                 const active = curFan === m ? "active" : "";
                 return `<button class="chip ${active}" data-kind="fan" data-val="${m}">${this._cap(m)}</button>`;
@@ -626,7 +650,7 @@ class NeumorphicClimateCard extends HTMLElement {
         const swings = this._attr("swing_modes", []);
         const curSwing = this._attr("swing_mode");
         if (cfg.show_swing && Array.isArray(swings) && swings.length) {
-            html += `<div class="ctrl-group"><div class="ctrl-label">Swing</div><div class="chips">`;
+            html += `<div class="ctrl-group"><div class="ctrl-label">${this._t("Swing")}</div><div class="chips">`;
             html += swings.map((m) => {
                 const active = curSwing === m ? "active" : "";
                 return `<button class="chip ${active}" data-kind="swing" data-val="${m}">${this._cap(m)}</button>`;
@@ -637,7 +661,7 @@ class NeumorphicClimateCard extends HTMLElement {
         // Humidity
         const hum = this._attr("current_humidity");
         if (cfg.show_humidity && hum !== undefined) {
-            html += `<div class="humidity"><span>Humidity</span><span>${hum}%</span></div>`;
+            html += `<div class="humidity"><span>${this._t("Humidity")}</span><span>${hum}%</span></div>`;
         }
 
         wrap.innerHTML = html;
@@ -656,6 +680,10 @@ class NeumorphicClimateCard extends HTMLElement {
     }
 
     _cap(s) { return typeof s === "string" ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : s; }
+    _t(key) {
+        const lang = langOf(this._hass);
+        return (I18N[lang] && I18N[lang][key]) || (I18N.en[key]) || this._cap(key);
+    }
 
     // ── Interaction: dial drag ────────────────────────────────────────────────
     _onDown(e, svg, cx, cy) {

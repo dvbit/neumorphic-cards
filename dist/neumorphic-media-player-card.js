@@ -80,6 +80,20 @@ const FONT_PRESETS = [
 ];
 const WEB_SAFE = new Set(["", "system-ui", "Arial", "Georgia", "monospace", "serif", "sans-serif"]);
 
+// ── i18n (runtime strings; auto-detected from hass.language, fallback en) ─────
+const MP_I18N = {
+    en: { Playing: "Playing", Paused: "Paused", Buffering: "Buffering", Idle: "Idle", Off: "Off", unavailable: "unavailable", play_on: "Play on", no_group: "No other groupable players" },
+    it: { Playing: "In riproduzione", Paused: "In pausa", Buffering: "Buffering", Idle: "Inattivo", Off: "Spento", unavailable: "non disponibile", play_on: "Riproduci su", no_group: "Nessun altro lettore raggruppabile" },
+    es: { Playing: "Reproduciendo", Paused: "En pausa", Buffering: "Cargando", Idle: "Inactivo", Off: "Apagado", unavailable: "no disponible", play_on: "Reproducir en", no_group: "No hay otros reproductores agrupables" },
+    fr: { Playing: "Lecture", Paused: "En pause", Buffering: "Mise en mémoire", Idle: "Inactif", Off: "Éteint", unavailable: "indisponible", play_on: "Lire sur", no_group: "Aucun autre lecteur groupable" },
+    de: { Playing: "Wiedergabe", Paused: "Pausiert", Buffering: "Puffern", Idle: "Inaktiv", Off: "Aus", unavailable: "nicht verfügbar", play_on: "Abspielen auf", no_group: "Keine weiteren gruppierbaren Player" },
+};
+function mpLang(hass) {
+    const l = (hass && (hass.language || (hass.locale && hass.locale.language))) || "en";
+    const base = String(l).toLowerCase().split("-")[0];
+    return MP_I18N[base] ? base : "en";
+}
+
 function fmtTime(sec) {
     if (sec == null || isNaN(sec) || sec < 0) return "0:00";
     sec = Math.floor(sec);
@@ -427,7 +441,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
 
         if (!s) {
             const t = sr.getElementById("mp-title"); if (t) t.textContent = cfg.entity || "Unavailable";
-            const a = sr.getElementById("mp-artist"); if (a) a.textContent = "unavailable";
+            const a = sr.getElementById("mp-artist"); if (a) a.textContent = this._t("unavailable");
             ["mp-progress", "mp-transport", "mp-extras", "mp-volume", "mp-source", "mp-group-panel"].forEach((id) => { const e = sr.getElementById(id); if (e) e.classList.add("hidden"); });
             return;
         }
@@ -448,8 +462,12 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         this._renderSource();
     }
 
+    _t(key) {
+        const lang = mpLang(this._hass);
+        return (MP_I18N[lang] && MP_I18N[lang][key]) || MP_I18N.en[key] || key;
+    }
     _stateVerb(state) {
-        return state === "playing" ? "Playing" : state === "paused" ? "Paused" : state === "buffering" ? "Buffering" : state === "idle" ? "Idle" : "Playing";
+        return state === "playing" ? this._t("Playing") : state === "paused" ? this._t("Paused") : state === "buffering" ? this._t("Buffering") : state === "idle" ? this._t("Idle") : this._t("Playing");
     }
 
     _renderOff() {
@@ -460,7 +478,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         const a = sr.getElementById("mp-artist"); if (a) a.textContent = "";
         let note = sr.getElementById("mp-offnote");
         if (!note) { note = document.createElement("div"); note.id = "mp-offnote"; note.className = "off-note"; meta.appendChild(note); }
-        note.innerHTML = `Off &middot; <button class="hbtn" id="mp-poweron" style="display:inline-flex;vertical-align:middle" aria-label="Turn on">${this._powerIcon()}</button>`;
+        note.innerHTML = `${this._t("Off")} &middot; <button class="hbtn" id="mp-poweron" style="display:inline-flex;vertical-align:middle" aria-label="Turn on">${this._powerIcon()}</button>`;
         const btn = note.querySelector("#mp-poweron");
         if (btn && this._supports(MF.TURN_ON)) btn.addEventListener("click", () => this._svc("turn_on"));
     }
@@ -515,7 +533,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             .filter((e) => e.startsWith("media_player.") && e !== master)
             .filter((e) => (Number(this._hass.states[e].attributes.supported_features || 0) & MF.GROUPING) === MF.GROUPING);
         const masterName = s.attributes.friendly_name || master.split(".")[1];
-        let html = `<div class="group-title">Play on</div>`;
+        let html = `<div class="group-title">${this._t("play_on")}</div>`;
         html += `<div class="group-row" data-master="1"><span class="gname master">${masterName}</span>
           <span class="gcheck on">${this._checkIcon()}</span></div>`;
         for (const ent of candidates) {
@@ -525,7 +543,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             html += `<div class="group-row" data-ent="${ent}"><span class="gname">${nm}</span>
               <span class="gcheck ${joined ? "on" : ""}">${joined ? this._checkIcon() : ""}</span></div>`;
         }
-        if (!candidates.length) html += `<div class="group-row"><span class="gname" style="opacity:.6">No other groupable players</span></div>`;
+        if (!candidates.length) html += `<div class="group-row"><span class="gname" style="opacity:.6">${this._t("no_group")}</span></div>`;
         panel.innerHTML = html;
         panel.querySelectorAll(".group-row[data-ent]").forEach((row) => {
             row.addEventListener("click", () => {
