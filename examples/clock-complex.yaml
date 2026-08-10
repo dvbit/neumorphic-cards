@@ -1,0 +1,23 @@
+# Neumorphic Clock — COMPLEX
+type: custom:neumorphic-clock-card
+entity: input_datetime.my_time     # time source (input_datetime / sensor / timestamp)
+date_entity: input_datetime.my_date  # optional: drives the date caption
+card_size: 300               # disc width px (180–460)
+# ── Hands ──
+hand_color: "#2f47d6"        # hour + minute hands
+seconds: false               # show the thin seconds hand
+seconds_color: "#006666"     # seconds hand colour
+smooth: false                # true = sweeping motion, false = ticking
+# ── Face ──
+show_ticks: false            # 12 hour tick marks
+show_numerals: false         # 12 / 3 / 6 / 9 numerals
+no_border: false             # transparent background
+# ── Date caption ──
+show_date: true
+date_format: long            # long (Sunday, July 25) | short (Sun, Jul 25) | weekday | numeric
+date_label:                  # typography for the caption
+  font: Space Mono
+  size: 15px
+  weight: 700
+  color: "#1E2938"
+  # text: "Custom caption"   # overrides the auto date entirely

@@ -265,6 +265,30 @@ The **player switcher** is a UI-only selection — tapping a chip changes which 
 
 ---
 
+## Neumorphic Clock — `custom:neumorphic-clock-card`
+
+[Simple](./examples/clock-simple.yaml) · [Complex](./examples/clock-complex.yaml)
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `entity` | — | Time source: `input_datetime.*`, or a `sensor` with a time / ISO-timestamp value. Omit for a **live wall clock**. |
+| `date_entity` | — | Optional entity that drives the date caption (else the time entity's date, else today). |
+| `card_size` | `300` | Disc width in px (180–460). |
+| `hand_color` | `#2f47d6` | Hour + minute hand colour. |
+| `seconds` | `false` | Show the thin seconds hand. |
+| `seconds_color` | `#006666` | Seconds hand colour. |
+| `smooth` | `false` | Sweeping motion instead of ticking. |
+| `show_ticks` | `false` | 12 hour tick marks. |
+| `show_numerals` | `false` | 12 / 3 / 6 / 9 numerals. |
+| `no_border` | `false` | Transparent background, no card shadow. |
+| `show_date` | `true` | Date caption below the clock. |
+| `date_format` | `long` | `long` (Sunday, July 25) \| `short` (Sun, Jul 25) \| `weekday` \| `numeric`. |
+| `date_label` | — | Typography block for the caption (common schema; `text` overrides the auto date). |
+
+The clock parses `input_datetime` (state or `timestamp` attribute), full datetime strings, ISO timestamp sensors, and plain `HH:MM`/`HH:MM:SS` states. The date caption is formatted in the active Home Assistant language via `Intl`.
+
+---
+
 ## Neumorphic Date Picker — `custom:datepicker-card`
 
 [Simple](./examples/datepicker-simple.yaml) · [Complex](./examples/datepicker-complex.yaml)

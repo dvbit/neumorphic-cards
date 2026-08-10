@@ -15,6 +15,7 @@ Every card ships with a full visual editor, raised / sunken / flat surface style
 | Calendar Grid | `custom:neumorphic-calendar-grid-card` | Month-grid calendar with today highlight, navigation, and tap-for-events. — [simple](./examples/calendar-simple.yaml) · [complex](./examples/calendar-complex.yaml) |
 | Climate | `custom:neumorphic-climate-card` | Soft-UI thermostat with a gradient dial and full climate controls. — [simple](./examples/climate-simple.yaml) · [full](./examples/climate-full.yaml) |
 | Media Player | `custom:neumorphic-media-player-card` | Now-playing card with circular album art, transport, progress, volume, shuffle/repeat. — [simple](./examples/media-player-simple.yaml) · [complex](./examples/media-player-complex.yaml) |
+| Clock | `custom:neumorphic-clock-card` | Minimalist analog clock for a time entity, with a seconds hand and localized date caption. — [simple](./examples/clock-simple.yaml) · [complex](./examples/clock-complex.yaml) |
 | Date Picker | `custom:datepicker-card` | Concentric disc-ring date picker. — [simple](./examples/datepicker-simple.yaml) · [complex](./examples/datepicker-complex.yaml) |
 | Time Picker | `custom:timepicker-card` | Concentric disc-ring time picker. — [simple](./examples/timepicker-simple.yaml) · [complex](./examples/timepicker-complex.yaml) |
 

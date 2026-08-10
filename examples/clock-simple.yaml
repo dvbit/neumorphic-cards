@@ -1,0 +1,4 @@
+# Neumorphic Clock — SIMPLE
+# Omit entity for a live wall clock, or point it at a time entity.
+type: custom:neumorphic-clock-card
+entity: input_datetime.my_time
