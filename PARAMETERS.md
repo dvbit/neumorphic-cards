@@ -2,6 +2,23 @@
 
 Every option for every card. `entity` is required where noted; everything else is optional and falls back to the default shown. Ready-to-copy examples for each card live in [`examples/`](./examples).
 
+## Design tokens
+
+All cards default to the [neumorphism design-system](https://github.com/bergside/awesome-design-skills/tree/HEAD/skills/neumorphism) tokens, and every value below remains overridable per card:
+
+| Token | Value |
+|-------|-------|
+| Surface | `#E7E5E4` |
+| Text | `#1E2938` |
+| Primary / accent | `#006666` |
+| Success | `#00A63D` |
+| Warning | `#FE9900` |
+| Danger | `#FF2157` |
+| Font (primary) | Space Mono |
+| Font (mono) | JetBrains Mono |
+
+Shadows are derived from the surface (`#c5c3c2` dark, `#ffffff` light). Space Mono and JetBrains Mono load automatically inside each card.
+
 ---
 
 ## Common typography block
@@ -33,7 +50,7 @@ Several cards accept **label blocks** — nested objects that configure one piec
 | `shape` | `round` | `round` \| `squircle` \| `square`. |
 | `size` | `68` | Knob diameter in px. |
 | `icon_size` | ~41% of `size` | Icon diameter in px. |
-| `icon_on_color` | `#e8824a` | Icon colour when on. |
+| `icon_on_color` | `#006666` | Icon colour when on. |
 | `icon_off_color` | theme | Icon colour when off. |
 | `icon_animation` | `none` | `none` \| `pulse` \| `spin` \| `bounce` \| `shake` \| `ping` \| `blink`. |
 | `glow_intensity` | `1` | Glow around the knob when active (0–2). |
@@ -88,8 +105,8 @@ Several cards accept **label blocks** — nested objects that configure one piec
 | `show_icon_border` | `true` | Border around the icon box. |
 | `display_only` | `false` | Read-only (hides thumb/track/range). |
 | `use_theme_colors` | `false` | Pull all colours from HA theme vars. |
-| `color` | `#e0c97f` | Fill / accent colour. |
-| `background_color` | `#e0e5ec` | Card background. |
+| `color` | `#006666` | Fill / accent colour. |
+| `background_color` | `#E7E5E4` | Card background. |
 | `shadow_dark` / `shadow_light` | rgba | Neumorphic shadows. |
 | `text_color` / `label_color` | — | Value / label colours. |
 | `fill_mode` | `solid` | `solid` \| `gradient`. |
@@ -213,7 +230,7 @@ Several cards accept **label blocks** — nested objects that configure one piec
 | `show_status_pill` | `true` | HVAC-action pill; tap toggles power. |
 | `show_modes` / `show_presets` / `show_fan` / `show_swing` | `true` | Control groups (if the entity supports them). |
 | `show_humidity` | `true` | Humidity readout. |
-| `accent_color` | `#4aa3df` | Tints active preset/fan/swing buttons. |
+| `accent_color` | `#006666` | Tints active preset/fan/swing buttons. |
 | `no_border` | `false` | Transparent background. |
 | `display_only` | `false` | Read-only. |
 | `title_label`, `primary_label`, `secondary_label`, `group_label`, `chip_label`, `pill_label`, `humidity_label` | — | Typography blocks (common schema). |

@@ -28,7 +28,7 @@
  *   fill_opacity: 0.72
  *
  * ── Colors ─────────────────────────────────────────────────────────────────
- *   color: "#e0c97f"   background_color: "#e0e5ec"
+ *   color: "#006666"   background_color: "#E7E5E4"
  *   shadow_dark: "rgba(163,177,198,0.6)"   shadow_light: "rgba(255,255,255,0.9)"
  *   text_color: "#3d4f6b"   label_color: "#8a9bb2"   icon_color: ""
  *
@@ -152,9 +152,9 @@ class NeumorphicSliderCard extends HTMLElement {
       label_position: "start",
       fill_mode: "solid", fill_opacity: 0.72,
       glow: true, glow_size: 18, glow_opacity: 0.55,
-      color: "#e0c97f", background_color: "#e0e5ec",
-      shadow_dark: "rgba(163,177,198,0.6)", shadow_light: "rgba(255,255,255,0.9)",
-      text_color: "#3d4f6b", label_color: "#8a9bb2",
+      color: "#006666", background_color: "#E7E5E4",
+      shadow_dark: "rgba(197,195,194,0.9)", shadow_light: "rgba(255,255,255,0.9)",
+      text_color: "#1E2938", label_color: "#8a9bb2",
       /* track */
       track_length:    isH ? 0 : 280,   // 0 = stretch-to-fill for horizontal
       track_thickness: 6,
@@ -252,7 +252,7 @@ class NeumorphicSliderCard extends HTMLElement {
       orientation: "vertical",
       name:        "Brightness",
       unit:        "%",
-      color:       "#e0c97f",
+      color:       "#006666",
     };
   }
 
@@ -295,9 +295,9 @@ class NeumorphicSliderCard extends HTMLElement {
     /* theme variable injection block — only emitted when use_theme_colors */
     const themeVarsCSS = useTheme ? `
         :host {
-          --nm-bg:           var(--primary-background-color,       #e0e5ec);
-          --nm-accent:       var(--primary-color,                  #e0c97f);
-          --nm-text:         var(--primary-text-color,             #3d4f6b);
+          --nm-bg:           var(--primary-background-color,       #E7E5E4);
+          --nm-accent:       var(--primary-color,                  #006666);
+          --nm-text:         var(--primary-text-color,             #1E2938);
           --nm-label:        var(--secondary-text-color,           #8a9bb2);
           --nm-shadow-dark:  var(--nm-shadow-dark-color,  var(--neumorphic-shadow-dark,  rgba(163,177,198,0.6)));
           --nm-shadow-light: var(--nm-shadow-light-color, var(--neumorphic-shadow-light, rgba(255,255,255,0.9)));
@@ -310,7 +310,7 @@ class NeumorphicSliderCard extends HTMLElement {
      * When use_theme_colors the accent colour from the theme is
      * unknown at JS time, so we use the explicit c.color value
      * (or its default) for the glow rgba — a reasonable trade-off. */
-    const glowColor   = c.color || "#e0c97f";
+    const glowColor   = c.color || "#006666";
     const glowRgba    = c.glow ? this._hexToRgba(glowColor, c.glow_opacity) : null;
     const glowCSS     = c.glow ? `, 0 0 ${c.glow_size}px ${Math.round(c.glow_size*1.5)}px ${glowRgba}` : "";
 
@@ -339,7 +339,8 @@ class NeumorphicSliderCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display: block; font-family: var(--primary-font-family,'Nunito',sans-serif); }
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+        :host { display: block; font-family: var(--primary-font-family,'Space Mono',monospace); }
         ${themeVarsCSS}
 
         .card {
@@ -763,7 +764,7 @@ class NeumorphicSliderCardEditor extends HTMLElement {
     /* helper: color swatch + text */
     const colorRow = (id, label, def) => row(label, `
       <div class="color-wrap">
-        <input type="color" id="${id}_swatch" value="${this._v(id, def)||"#e0e5ec"}">
+        <input type="color" id="${id}_swatch" value="${this._v(id, def)||"#E7E5E4"}">
         ${txt(id, this._v(id, def), def||"(inherit)")}
       </div>`);
 
@@ -960,14 +961,14 @@ class NeumorphicSliderCardEditor extends HTMLElement {
           c.fill_mode||"solid"))}
         ${(c.fill_mode||"solid")==="gradient" ? `
         ${colorRow("fill_color_start","Gradient start","#56d3f5")}
-        ${colorRow("fill_color_end",  "Gradient end",  "#e0c97f")}` : ""}
+        ${colorRow("fill_color_end",  "Gradient end",  "#006666")}` : ""}
         ${row("Fill opacity", range("fill_opacity", this._v("fill_opacity",0.72), 0, 1, 0.01))}
 
         <!-- ══ COLORS ══ -->
         <div class="section">Colors</div>
-        ${colorRow("color",            "Accent / fill",    "#e0c97f")}
-        ${colorRow("background_color", "Background",       "#e0e5ec")}
-        ${colorRow("text_color",       "Value text",       "#3d4f6b")}
+        ${colorRow("color",            "Accent / fill",    "#006666")}
+        ${colorRow("background_color", "Background",       "#E7E5E4")}
+        ${colorRow("text_color",       "Value text",       "#1E2938")}
         ${colorRow("label_color",      "Labels",           "#8a9bb2")}
         ${colorRow("icon_color",       "Icon color",       "")}
 

@@ -46,7 +46,7 @@ class NeuCardEditorBase extends HTMLElement {
   _fire(){this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true}));}
   _set(path,value){const parts=path.split(".");let obj=this._config;while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}obj[parts[0]]=value;this._fire();this._render();}
   _get(path,def=""){const parts=path.split(".");let obj=this._config;for(const k of parts){if(obj==null)return def;obj=obj[k];}return obj??def;}
-  static get FONTS(){return[["","Default"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
+  static get FONTS(){return[["","Default"],["'Space Mono',monospace","Space Mono"],["'JetBrains Mono',monospace","JetBrains Mono"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
   static get POS(){return["top","bottom","left","right","none"];}
   static get WEIGHTS(){return["400","500","600","700","800","900"];}
   static get TRANSFORMS(){return["none","uppercase","lowercase","capitalize","full-width"];}
@@ -215,15 +215,16 @@ class DatepickerCard extends HTMLElement {
 
     this.shadowRoot.innerHTML=`
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host{display:block;}
       .card{
-        --bg:#e4e9f0;--light:#fff;--sh:#b8c0cc;--text:#2d3a52;--muted:#8fa0b8;
+        --bg:#E7E5E4;--light:#ffffff;--sh:#c5c3c2;--text:#1E2938;--muted:#8fa0b8;
         --c-day:#9aafc8;--c-month:#a8b8a8;--c-year:#b0a8c0;
         background:${hideBorder?"transparent":"var(--bg)"};border-radius:28px;
         box-shadow:${hideBorder?"none":"10px 10px 26px var(--sh),-10px -10px 26px var(--light)"};
         padding:${hideBorder?"0":"26px 18px 30px"};
         display:grid;grid-template-areas:"top""mid""bot";grid-template-rows:auto 1fr auto;
-        align-items:center;justify-items:center;gap:10px;font-family:'Nunito','Segoe UI',sans-serif;
+        align-items:center;justify-items:center;gap:10px;font-family:'Space Mono','Segoe UI',monospace;
       }
       .s-top{grid-area:top;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
       .s-bot{grid-area:bot;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
@@ -453,7 +454,7 @@ class NeuCardEditorBase extends HTMLElement {
     for(const k of parts){if(obj==null)return def;obj=obj[k];}
     return obj??def;
   }
-  static get FONTS(){return[["","Default"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
+  static get FONTS(){return[["","Default"],["'Space Mono',monospace","Space Mono"],["'JetBrains Mono',monospace","JetBrains Mono"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
   static get POS(){return["top","bottom","left","right","none"];}
   static get WEIGHTS(){return["400","500","600","700","800","900"];}
   static get TRANSFORMS(){return["none","uppercase","lowercase","capitalize","full-width"];}
@@ -618,15 +619,16 @@ class TimepickerCard extends HTMLElement {
 
     this.shadowRoot.innerHTML=`
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host{display:block;}
       .card{
-        --bg:#e4e9f0;--light:#fff;--sh:#b8c0cc;--text:#2d3a52;--muted:#8fa0b8;
+        --bg:#E7E5E4;--light:#ffffff;--sh:#c5c3c2;--text:#1E2938;--muted:#8fa0b8;
         --rh:#9aafc8;--rm:#b0a8c0;
         background:${hideBorder?"transparent":"var(--bg)"};border-radius:28px;
         box-shadow:${hideBorder?"none":"10px 10px 26px var(--sh),-10px -10px 26px var(--light)"};
         padding:${hideBorder?"0":"26px 18px 30px"};
         display:grid;grid-template-areas:"top""mid""bot";grid-template-rows:auto 1fr auto;
-        align-items:center;justify-items:center;gap:10px;font-family:'Nunito','Segoe UI',sans-serif;
+        align-items:center;justify-items:center;gap:10px;font-family:'Space Mono','Segoe UI',monospace;
       }
       .s-top{grid-area:top;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
       .s-bot{grid-area:bot;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
@@ -893,7 +895,7 @@ window.customCards.push({type:"timepicker-card",name:"Neumorphic Time Picker",de
 //  CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const DEFAULT_ON_COLOR = '#e8824a';
+const DEFAULT_ON_COLOR = '#006666';
 
 const POWER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -985,10 +987,10 @@ function positionLayout(pos) {
 
 function labelCSS(cls, cfg, isHorizontal) {
   const mw  = cfg.max_width > 0 ? `${cfg.max_width}px` : (isHorizontal ? '160px' : '100%');
-  const col = cfg.color ? cfg.color : 'var(--primary-text-color, #4a4f5a)';
+  const col = cfg.color ? cfg.color : 'var(--primary-text-color, #1E2938)';
   return `
   .${cls} {
-    font-family:    ${cfg.font_family ? '"' + cfg.font_family + '"' : 'var(--primary-font-family, var(--paper-font-body1_-_font-family, inherit))'};
+    font-family:    ${cfg.font_family ? '"' + cfg.font_family + '"' : "var(--primary-font-family, 'Space Mono', monospace)"};
     font-size:      ${cfg.font_size}px;
     font-weight:    ${cfg.font_weight};
     font-style:     ${cfg.font_style};
@@ -1016,8 +1018,11 @@ function buildFontImports(majorCfg, minorCfg) {
   const families = [majorCfg.font_family, minorCfg.font_family]
     .filter(f => f && !WEB_SAFE.has(f));
   const unique = [...new Set(families)];
-  if (!unique.length) return '';
-  return unique.map(f =>
+  // Always load the design-system default (Space Mono) so labels render in it
+  // even when the user hasn't picked a custom font.
+  const base = `@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');`;
+  if (!unique.length) return base;
+  return base + '\n' + unique.map(f =>
     `@import url('https://fonts.googleapis.com/css2?family=${
       encodeURIComponent(f).replace(/%20/g,'+')
     }:wght@300;400;500;600;700;800&display=swap');`
@@ -1069,13 +1074,13 @@ function buildStyles(knobSize, iconSize, shape, glowIntensity, depth, onColor, o
   return `${fontImports ? fontImports + '\n' : ''}
   :host { display: block; }
   .card-wrapper {
-    --nm-bg:          var(--ha-card-background, #e0e5ec);
+    --nm-bg:          var(--ha-card-background, #E7E5E4);
     --nm-shadow-dark: var(--neumorphic-shadow-dark,  #b8bec7);
     --nm-shadow-lite: var(--neumorphic-shadow-light, #ffffff);
     --nm-on-color:    ${onColor};
     --nm-off-color:   var(--nm-icon-off, #a0a0a8);
     --nm-icon-off:    ${offColor || '#a0a0a8'};
-    --nm-text:        var(--primary-text-color, #4a4f5a);
+    --nm-text:        var(--primary-text-color, #1E2938);
     display: flex; flex-direction: ${cardFlex}; align-items: center; justify-content: center;
     padding: ${padV}px ${padH}px ${padB}px; gap: ${gap}px;
     background: var(--nm-bg); border-radius: ${cardRadiusRule};
@@ -1924,7 +1929,7 @@ console.info(
  *   fill_opacity: 0.72
  *
  * ── Colors ─────────────────────────────────────────────────────────────────
- *   color: "#e0c97f"   background_color: "#e0e5ec"
+ *   color: "#006666"   background_color: "#E7E5E4"
  *   shadow_dark: "rgba(163,177,198,0.6)"   shadow_light: "rgba(255,255,255,0.9)"
  *   text_color: "#3d4f6b"   label_color: "#8a9bb2"   icon_color: ""
  *
@@ -2048,9 +2053,9 @@ class NeumorphicSliderCard extends HTMLElement {
       label_position: "start",
       fill_mode: "solid", fill_opacity: 0.72,
       glow: true, glow_size: 18, glow_opacity: 0.55,
-      color: "#e0c97f", background_color: "#e0e5ec",
-      shadow_dark: "rgba(163,177,198,0.6)", shadow_light: "rgba(255,255,255,0.9)",
-      text_color: "#3d4f6b", label_color: "#8a9bb2",
+      color: "#006666", background_color: "#E7E5E4",
+      shadow_dark: "rgba(197,195,194,0.9)", shadow_light: "rgba(255,255,255,0.9)",
+      text_color: "#1E2938", label_color: "#8a9bb2",
       /* track */
       track_length:    isH ? 0 : 280,   // 0 = stretch-to-fill for horizontal
       track_thickness: 6,
@@ -2148,7 +2153,7 @@ class NeumorphicSliderCard extends HTMLElement {
       orientation: "vertical",
       name:        "Brightness",
       unit:        "%",
-      color:       "#e0c97f",
+      color:       "#006666",
     };
   }
 
@@ -2191,9 +2196,9 @@ class NeumorphicSliderCard extends HTMLElement {
     /* theme variable injection block — only emitted when use_theme_colors */
     const themeVarsCSS = useTheme ? `
         :host {
-          --nm-bg:           var(--primary-background-color,       #e0e5ec);
-          --nm-accent:       var(--primary-color,                  #e0c97f);
-          --nm-text:         var(--primary-text-color,             #3d4f6b);
+          --nm-bg:           var(--primary-background-color,       #E7E5E4);
+          --nm-accent:       var(--primary-color,                  #006666);
+          --nm-text:         var(--primary-text-color,             #1E2938);
           --nm-label:        var(--secondary-text-color,           #8a9bb2);
           --nm-shadow-dark:  var(--nm-shadow-dark-color,  var(--neumorphic-shadow-dark,  rgba(163,177,198,0.6)));
           --nm-shadow-light: var(--nm-shadow-light-color, var(--neumorphic-shadow-light, rgba(255,255,255,0.9)));
@@ -2206,7 +2211,7 @@ class NeumorphicSliderCard extends HTMLElement {
      * When use_theme_colors the accent colour from the theme is
      * unknown at JS time, so we use the explicit c.color value
      * (or its default) for the glow rgba — a reasonable trade-off. */
-    const glowColor   = c.color || "#e0c97f";
+    const glowColor   = c.color || "#006666";
     const glowRgba    = c.glow ? this._hexToRgba(glowColor, c.glow_opacity) : null;
     const glowCSS     = c.glow ? `, 0 0 ${c.glow_size}px ${Math.round(c.glow_size*1.5)}px ${glowRgba}` : "";
 
@@ -2235,7 +2240,8 @@ class NeumorphicSliderCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display: block; font-family: var(--primary-font-family,'Nunito',sans-serif); }
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+        :host { display: block; font-family: var(--primary-font-family,'Space Mono',monospace); }
         ${themeVarsCSS}
 
         .card {
@@ -2659,7 +2665,7 @@ class NeumorphicSliderCardEditor extends HTMLElement {
     /* helper: color swatch + text */
     const colorRow = (id, label, def) => row(label, `
       <div class="color-wrap">
-        <input type="color" id="${id}_swatch" value="${this._v(id, def)||"#e0e5ec"}">
+        <input type="color" id="${id}_swatch" value="${this._v(id, def)||"#E7E5E4"}">
         ${txt(id, this._v(id, def), def||"(inherit)")}
       </div>`);
 
@@ -2856,14 +2862,14 @@ class NeumorphicSliderCardEditor extends HTMLElement {
           c.fill_mode||"solid"))}
         ${(c.fill_mode||"solid")==="gradient" ? `
         ${colorRow("fill_color_start","Gradient start","#56d3f5")}
-        ${colorRow("fill_color_end",  "Gradient end",  "#e0c97f")}` : ""}
+        ${colorRow("fill_color_end",  "Gradient end",  "#006666")}` : ""}
         ${row("Fill opacity", range("fill_opacity", this._v("fill_opacity",0.72), 0, 1, 0.01))}
 
         <!-- ══ COLORS ══ -->
         <div class="section">Colors</div>
-        ${colorRow("color",            "Accent / fill",    "#e0c97f")}
-        ${colorRow("background_color", "Background",       "#e0e5ec")}
-        ${colorRow("text_color",       "Value text",       "#3d4f6b")}
+        ${colorRow("color",            "Accent / fill",    "#006666")}
+        ${colorRow("background_color", "Background",       "#E7E5E4")}
+        ${colorRow("text_color",       "Value text",       "#1E2938")}
         ${colorRow("label_color",      "Labels",           "#8a9bb2")}
         ${colorRow("icon_color",       "Icon color",       "")}
 
@@ -3245,18 +3251,18 @@ const DARK_PALETTE = {
     glow: "#2196f3", // blue glow behind handle in dark mode
 };
 const LIGHT_PALETTE = {
-    bg: "#e0e0e0",
-    shadowDark: "#bebebe",
+    bg: "#E7E5E4",
+    shadowDark: "#c5c3c2",
     shadowLight: "#ffffff",
-    track: "#c8c8c8",
-    accent1: "#a3b1c6",
-    accent2: "#7b8fa8",
-    handleBg: "#d6d6d6",
-    handleDot: "#a3b1c6",
+    track: "#d3d1d0",
+    accent1: "#006666",
+    accent2: "#00A63D",
+    handleBg: "#ded9d8",
+    handleDot: "#006666",
     innerBorder: "rgba(180,180,180,0.5)",
-    textMuted: "#888888",
-    textPrimary: "#333333",
-    glow: "#a3b1c6", // soft blue-grey glow in light mode
+    textMuted: "#8a929e",
+    textPrimary: "#1E2938",
+    glow: "#006666", // primary-token glow in light mode
 };
 // ── Dark-mode detection ───────────────────────────────────────────────────────
 function resolveIsDark(hass) {
@@ -3586,6 +3592,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         const mt8 = Math.round(8 * sc);
         const rh = Math.round(18 * sc);
         el.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host { display: block; }
 
       ha-card {
@@ -3601,7 +3608,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
       }
 
       .title {
-        font-family:    var(--primary-font-family, sans-serif);
+        font-family:    var(--primary-font-family, 'Space Mono', monospace);
         font-size:      ${fs13}px;
         font-weight:    400;
         letter-spacing: 0.08em;
@@ -3630,14 +3637,14 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         position:    relative;
         height:      ${rh * 2}px;
         margin-top:  ${mt8}px;
-        font-family: var(--primary-font-family, sans-serif);
+        font-family: var(--primary-font-family, 'Space Mono', monospace);
         font-size:   ${fs11}px;
         color:       var(--text-medium-light-color, #666);
       }
       #min-display       { position: absolute; left:  ${mt8}px; top: 0; }
       #max-display       { position: absolute; right: ${mt8}px; top: 0; }
-      #min-value-display { position: absolute; left:  ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #e0e0e0); }
-      #max-value-display { position: absolute; right: ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #e0e0e0); text-align: right; }
+      #min-value-display { position: absolute; left:  ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, 'Space Mono', monospace); color: var(--primary-text-color, #e0e0e0); }
+      #max-value-display { position: absolute; right: ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, 'Space Mono', monospace); color: var(--primary-text-color, #e0e0e0); text-align: right; }
 
       .value-wrap {
         display:         flex;
@@ -3645,7 +3652,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         margin-top:      ${mt4}px;
       }
       .value-wrap span {
-        font-family: var(--primary-font-family, sans-serif);
+        font-family: var(--primary-font-family, 'Space Mono', monospace);
         font-size:   ${fs22}px;
         font-weight: 500;
         color:       var(--primary-text-color, #e0e0e0);
@@ -3665,7 +3672,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         gap:             ${Math.round(4 * sc)}px;
       }
       .value-center span {
-        font-family: var(--primary-font-family, sans-serif);
+        font-family: var(--primary-font-family, 'Space Mono', monospace);
         font-size:   ${fs32}px;
         font-weight: 500;
         color:       var(--primary-text-color, #e0e0e0);
@@ -3675,7 +3682,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
 
       /* ── minor label ── */
       .minor-label {
-        font-family:    var(--primary-font-family, sans-serif);
+        font-family:    var(--primary-font-family, 'Space Mono', monospace);
         font-size:      ${fs11}px;
         font-weight:    400;
         letter-spacing: 0.06em;
@@ -5000,14 +5007,16 @@ function fromYaml(text) {
 //  CARD STYLES
 // ═══════════════════════════════════════════════════════════════════
 var CARD_STYLES = [
+  "@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');",
   ":host{display:block}",
   ".nm-container{",
-  "  --nm-bg:var(--primary-background-color,#e0e5ec);",
-  "  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(163,177,198,.6));",
+  "  --nm-bg:var(--primary-background-color,#E7E5E4);",
+  "  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(197,195,194,.9));",
   "  --nm-shadow-light:var(--nm-shadow-light-color,rgba(255,255,255,.8));",
-  "  --nm-text:var(--primary-text-color,#44506a);",
-  "  --nm-accent:var(--accent-color,#6c8ebf);",
+  "  --nm-text:var(--primary-text-color,#1E2938);",
+  "  --nm-accent:var(--accent-color,#006666);",
   "  --nm-radius:16px;--nm-padding:16px;--nm-gap:12px;",
+  "  font-family:var(--primary-font-family,'Space Mono',monospace);",
   "  background:var(--nm-bg);border-radius:var(--nm-radius);",
   "  padding:var(--nm-padding);box-sizing:border-box;transition:box-shadow .25s ease}",
   ".nm-container.style-raised{box-shadow:6px 6px 12px var(--nm-shadow-dark),-6px -6px 12px var(--nm-shadow-light)}",
@@ -5036,12 +5045,12 @@ var CARD_STYLES = [
 var EDITOR_STYLES = `
 :host{display:block}
 .editor-wrap{
-  --nm-bg:var(--primary-background-color,#e0e5ec);
-  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(163,177,198,.5));
+  --nm-bg:var(--primary-background-color,#E7E5E4);
+  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(197,195,194,.85));
   --nm-shadow-light:var(--nm-shadow-light-color,rgba(255,255,255,.8));
-  --nm-text:var(--primary-text-color,#44506a);
+  --nm-text:var(--primary-text-color,#1E2938);
   --nm-text-sec:var(--secondary-text-color,#6b7a99);
-  --nm-accent:var(--accent-color,#6c8ebf);
+  --nm-accent:var(--accent-color,#006666);
   --nm-red:var(--error-color,#d9534f);
   background:var(--nm-bg);
   border-radius:12px;
@@ -5740,7 +5749,7 @@ window.customCards.push({
 console.info(
   "%c NEUMORPHIC-CONTAINER-CARD %c v" + VERSION + " ",
   "background:#6c8ebf;color:#fff;font-weight:bold;border-radius:4px 0 0 4px;padding:2px 6px",
-  "background:#e0e5ec;color:#44506a;font-weight:bold;border-radius:0 4px 4px 0;padding:2px 6px"
+  "background:#E7E5E4;color:#1E2938;font-weight:bold;border-radius:0 4px 4px 0;padding:2px 6px"
 );
 
 })();
@@ -6022,6 +6031,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         const softOut = `${Math.round(5 * sc)}px ${Math.round(5 * sc)}px ${Math.round(11 * sc)}px ${p.shadowDark}, -${Math.round(5 * sc)}px -${Math.round(5 * sc)}px ${Math.round(11 * sc)}px ${p.shadowLight}`;
         const softIn = `inset ${Math.round(3 * sc)}px ${Math.round(3 * sc)}px ${Math.round(6 * sc)}px ${p.shadowDark}, inset -${Math.round(3 * sc)}px -${Math.round(3 * sc)}px ${Math.round(6 * sc)}px ${p.shadowLight}`;
         el.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host { display: block; }
       ha-card {
         display: flex;
@@ -6883,10 +6893,10 @@ const C_DARK = {
     discFrom: "#262b33", discTo: "#1f232a",
 };
 const C_LIGHT = {
-    bg: "#eef1f4", surface: "#eef1f4",
-    shadowDark: "#d5d8dd", shadowLight: "#ffffff",
-    textPrimary: "#8a929e", textSecondary: "#aeb5c0", textFaint: "#c3c9d2",
-    discFrom: "#fbfcfd", discTo: "#f4f6f8",
+    bg: "#E7E5E4", surface: "#E7E5E4",
+    shadowDark: "#c5c3c2", shadowLight: "#ffffff",
+    textPrimary: "#1E2938", textSecondary: "#8a929e", textFaint: "#b3b8bf",
+    discFrom: "#efeeed", discTo: "#e3e1e0",
 };
 
 // Cold → warm gradient stops for the ring (soft pastel, matching the reference).
@@ -7101,8 +7111,9 @@ class NeumorphicClimateCard extends HTMLElement {
         const softOutSm = `${Math.round(4 * sc)}px ${Math.round(4 * sc)}px ${Math.round(9 * sc)}px ${p.shadowDark}, -${Math.round(4 * sc)}px -${Math.round(4 * sc)}px ${Math.round(9 * sc)}px ${p.shadowLight}`;
         const softIn = `inset ${Math.round(3 * sc)}px ${Math.round(3 * sc)}px ${Math.round(7 * sc)}px ${p.shadowDark}, inset -${Math.round(3 * sc)}px -${Math.round(3 * sc)}px ${Math.round(7 * sc)}px ${p.shadowLight}`;
         const cfg = this._config || {};
-        const accent = cfg.accent_color || "#4aa3df";
+        const accent = cfg.accent_color || "#006666";
         el.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host { display:block; }
       ha-card {
         display:flex; flex-direction:column; align-items:stretch;
@@ -7774,7 +7785,7 @@ class NeumorphicClimateCardEditor extends HTMLElement {
         ${this._toggle("show_humidity", "Humidity readout", true)}
       `)}
       ${this._sec("colors", "🎨 Colours", `
-        ${this._color("accent_color", "Accent", "#4aa3df")}
+        ${this._color("accent_color", "Accent", "#006666")}
       `)}
       ${this._sec("title_lbl", "𝗔 Title Label", this._labelBlock("title_label", true))}
       ${this._sec("primary_lbl", "① Primary Temperature", this._labelBlock("primary_label", false))}

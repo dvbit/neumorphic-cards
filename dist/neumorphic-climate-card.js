@@ -35,10 +35,10 @@ const C_DARK = {
     discFrom: "#262b33", discTo: "#1f232a",
 };
 const C_LIGHT = {
-    bg: "#eef1f4", surface: "#eef1f4",
-    shadowDark: "#d5d8dd", shadowLight: "#ffffff",
-    textPrimary: "#8a929e", textSecondary: "#aeb5c0", textFaint: "#c3c9d2",
-    discFrom: "#fbfcfd", discTo: "#f4f6f8",
+    bg: "#E7E5E4", surface: "#E7E5E4",
+    shadowDark: "#c5c3c2", shadowLight: "#ffffff",
+    textPrimary: "#1E2938", textSecondary: "#8a929e", textFaint: "#b3b8bf",
+    discFrom: "#efeeed", discTo: "#e3e1e0",
 };
 
 // Cold → warm gradient stops for the ring (soft pastel, matching the reference).
@@ -253,8 +253,9 @@ class NeumorphicClimateCard extends HTMLElement {
         const softOutSm = `${Math.round(4 * sc)}px ${Math.round(4 * sc)}px ${Math.round(9 * sc)}px ${p.shadowDark}, -${Math.round(4 * sc)}px -${Math.round(4 * sc)}px ${Math.round(9 * sc)}px ${p.shadowLight}`;
         const softIn = `inset ${Math.round(3 * sc)}px ${Math.round(3 * sc)}px ${Math.round(7 * sc)}px ${p.shadowDark}, inset -${Math.round(3 * sc)}px -${Math.round(3 * sc)}px ${Math.round(7 * sc)}px ${p.shadowLight}`;
         const cfg = this._config || {};
-        const accent = cfg.accent_color || "#4aa3df";
+        const accent = cfg.accent_color || "#006666";
         el.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host { display:block; }
       ha-card {
         display:flex; flex-direction:column; align-items:stretch;
@@ -926,7 +927,7 @@ class NeumorphicClimateCardEditor extends HTMLElement {
         ${this._toggle("show_humidity", "Humidity readout", true)}
       `)}
       ${this._sec("colors", "🎨 Colours", `
-        ${this._color("accent_color", "Accent", "#4aa3df")}
+        ${this._color("accent_color", "Accent", "#006666")}
       `)}
       ${this._sec("title_lbl", "𝗔 Title Label", this._labelBlock("title_label", true))}
       ${this._sec("primary_lbl", "① Primary Temperature", this._labelBlock("primary_label", false))}

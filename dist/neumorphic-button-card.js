@@ -50,7 +50,7 @@
 //  CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const DEFAULT_ON_COLOR = '#e8824a';
+const DEFAULT_ON_COLOR = '#006666';
 
 const POWER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -142,10 +142,10 @@ function positionLayout(pos) {
 
 function labelCSS(cls, cfg, isHorizontal) {
   const mw  = cfg.max_width > 0 ? `${cfg.max_width}px` : (isHorizontal ? '160px' : '100%');
-  const col = cfg.color ? cfg.color : 'var(--primary-text-color, #4a4f5a)';
+  const col = cfg.color ? cfg.color : 'var(--primary-text-color, #1E2938)';
   return `
   .${cls} {
-    font-family:    ${cfg.font_family ? '"' + cfg.font_family + '"' : 'var(--primary-font-family, var(--paper-font-body1_-_font-family, inherit))'};
+    font-family:    ${cfg.font_family ? '"' + cfg.font_family + '"' : "var(--primary-font-family, 'Space Mono', monospace)"};
     font-size:      ${cfg.font_size}px;
     font-weight:    ${cfg.font_weight};
     font-style:     ${cfg.font_style};
@@ -173,8 +173,11 @@ function buildFontImports(majorCfg, minorCfg) {
   const families = [majorCfg.font_family, minorCfg.font_family]
     .filter(f => f && !WEB_SAFE.has(f));
   const unique = [...new Set(families)];
-  if (!unique.length) return '';
-  return unique.map(f =>
+  // Always load the design-system default (Space Mono) so labels render in it
+  // even when the user hasn't picked a custom font.
+  const base = `@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');`;
+  if (!unique.length) return base;
+  return base + '\n' + unique.map(f =>
     `@import url('https://fonts.googleapis.com/css2?family=${
       encodeURIComponent(f).replace(/%20/g,'+')
     }:wght@300;400;500;600;700;800&display=swap');`
@@ -226,13 +229,13 @@ function buildStyles(knobSize, iconSize, shape, glowIntensity, depth, onColor, o
   return `${fontImports ? fontImports + '\n' : ''}
   :host { display: block; }
   .card-wrapper {
-    --nm-bg:          var(--ha-card-background, #e0e5ec);
+    --nm-bg:          var(--ha-card-background, #E7E5E4);
     --nm-shadow-dark: var(--neumorphic-shadow-dark,  #b8bec7);
     --nm-shadow-lite: var(--neumorphic-shadow-light, #ffffff);
     --nm-on-color:    ${onColor};
     --nm-off-color:   var(--nm-icon-off, #a0a0a8);
     --nm-icon-off:    ${offColor || '#a0a0a8'};
-    --nm-text:        var(--primary-text-color, #4a4f5a);
+    --nm-text:        var(--primary-text-color, #1E2938);
     display: flex; flex-direction: ${cardFlex}; align-items: center; justify-content: center;
     padding: ${padV}px ${padH}px ${padB}px; gap: ${gap}px;
     background: var(--nm-bg); border-radius: ${cardRadiusRule};

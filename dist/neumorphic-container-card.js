@@ -131,14 +131,16 @@ function fromYaml(text) {
 //  CARD STYLES
 // ═══════════════════════════════════════════════════════════════════
 var CARD_STYLES = [
+  "@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');",
   ":host{display:block}",
   ".nm-container{",
-  "  --nm-bg:var(--primary-background-color,#e0e5ec);",
-  "  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(163,177,198,.6));",
+  "  --nm-bg:var(--primary-background-color,#E7E5E4);",
+  "  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(197,195,194,.9));",
   "  --nm-shadow-light:var(--nm-shadow-light-color,rgba(255,255,255,.8));",
-  "  --nm-text:var(--primary-text-color,#44506a);",
-  "  --nm-accent:var(--accent-color,#6c8ebf);",
+  "  --nm-text:var(--primary-text-color,#1E2938);",
+  "  --nm-accent:var(--accent-color,#006666);",
   "  --nm-radius:16px;--nm-padding:16px;--nm-gap:12px;",
+  "  font-family:var(--primary-font-family,'Space Mono',monospace);",
   "  background:var(--nm-bg);border-radius:var(--nm-radius);",
   "  padding:var(--nm-padding);box-sizing:border-box;transition:box-shadow .25s ease}",
   ".nm-container.style-raised{box-shadow:6px 6px 12px var(--nm-shadow-dark),-6px -6px 12px var(--nm-shadow-light)}",
@@ -167,12 +169,12 @@ var CARD_STYLES = [
 var EDITOR_STYLES = `
 :host{display:block}
 .editor-wrap{
-  --nm-bg:var(--primary-background-color,#e0e5ec);
-  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(163,177,198,.5));
+  --nm-bg:var(--primary-background-color,#E7E5E4);
+  --nm-shadow-dark:var(--nm-shadow-dark-color,rgba(197,195,194,.85));
   --nm-shadow-light:var(--nm-shadow-light-color,rgba(255,255,255,.8));
-  --nm-text:var(--primary-text-color,#44506a);
+  --nm-text:var(--primary-text-color,#1E2938);
   --nm-text-sec:var(--secondary-text-color,#6b7a99);
-  --nm-accent:var(--accent-color,#6c8ebf);
+  --nm-accent:var(--accent-color,#006666);
   --nm-red:var(--error-color,#d9534f);
   background:var(--nm-bg);
   border-radius:12px;
@@ -871,5 +873,5 @@ window.customCards.push({
 console.info(
   "%c NEUMORPHIC-CONTAINER-CARD %c v" + VERSION + " ",
   "background:#6c8ebf;color:#fff;font-weight:bold;border-radius:4px 0 0 4px;padding:2px 6px",
-  "background:#e0e5ec;color:#44506a;font-weight:bold;border-radius:0 4px 4px 0;padding:2px 6px"
+  "background:#E7E5E4;color:#1E2938;font-weight:bold;border-radius:0 4px 4px 0;padding:2px 6px"
 );

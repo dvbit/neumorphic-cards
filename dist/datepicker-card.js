@@ -37,7 +37,7 @@ class NeuCardEditorBase extends HTMLElement {
   _fire(){this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true}));}
   _set(path,value){const parts=path.split(".");let obj=this._config;while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}obj[parts[0]]=value;this._fire();this._render();}
   _get(path,def=""){const parts=path.split(".");let obj=this._config;for(const k of parts){if(obj==null)return def;obj=obj[k];}return obj??def;}
-  static get FONTS(){return[["","Default"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
+  static get FONTS(){return[["","Default"],["'Space Mono',monospace","Space Mono"],["'JetBrains Mono',monospace","JetBrains Mono"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
   static get POS(){return["top","bottom","left","right","none"];}
   static get WEIGHTS(){return["400","500","600","700","800","900"];}
   static get TRANSFORMS(){return["none","uppercase","lowercase","capitalize","full-width"];}
@@ -206,15 +206,16 @@ class DatepickerCard extends HTMLElement {
 
     this.shadowRoot.innerHTML=`
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host{display:block;}
       .card{
-        --bg:#e4e9f0;--light:#fff;--sh:#b8c0cc;--text:#2d3a52;--muted:#8fa0b8;
+        --bg:#E7E5E4;--light:#ffffff;--sh:#c5c3c2;--text:#1E2938;--muted:#8fa0b8;
         --c-day:#9aafc8;--c-month:#a8b8a8;--c-year:#b0a8c0;
         background:${hideBorder?"transparent":"var(--bg)"};border-radius:28px;
         box-shadow:${hideBorder?"none":"10px 10px 26px var(--sh),-10px -10px 26px var(--light)"};
         padding:${hideBorder?"0":"26px 18px 30px"};
         display:grid;grid-template-areas:"top""mid""bot";grid-template-rows:auto 1fr auto;
-        align-items:center;justify-items:center;gap:10px;font-family:'Nunito','Segoe UI',sans-serif;
+        align-items:center;justify-items:center;gap:10px;font-family:'Space Mono','Segoe UI',monospace;
       }
       .s-top{grid-area:top;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}
       .s-bot{grid-area:bot;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;min-height:4px;}

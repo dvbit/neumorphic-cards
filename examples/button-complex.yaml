@@ -6,7 +6,7 @@ icon: mdi:lightbulb
 shape: squircle              # round | squircle | square
 size: 80                     # knob diameter in px
 icon_size: 34
-icon_on_color: "#e8824a"
+icon_on_color: "#006666"
 icon_off_color: "#8a9bb2"
 icon_animation: pulse        # none | pulse | spin | bounce | shake | ping | blink
 glow_intensity: 1.2          # 0–2, glow around the knob when "on"
@@ -28,7 +28,7 @@ label_major:                 # primary label under/over the knob
   font_family: Space Mono
   letter_spacing: 0.04
   text_transform: none
-  color: "#3d4f6b"
+  color: "#1E2938"
   opacity: 0.85
   align: center
 label_minor:                 # secondary smaller label

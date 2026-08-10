@@ -74,18 +74,18 @@ const DARK_PALETTE = {
     glow: "#2196f3", // blue glow behind handle in dark mode
 };
 const LIGHT_PALETTE = {
-    bg: "#e0e0e0",
-    shadowDark: "#bebebe",
+    bg: "#E7E5E4",
+    shadowDark: "#c5c3c2",
     shadowLight: "#ffffff",
-    track: "#c8c8c8",
-    accent1: "#a3b1c6",
-    accent2: "#7b8fa8",
-    handleBg: "#d6d6d6",
-    handleDot: "#a3b1c6",
+    track: "#d3d1d0",
+    accent1: "#006666",
+    accent2: "#00A63D",
+    handleBg: "#ded9d8",
+    handleDot: "#006666",
     innerBorder: "rgba(180,180,180,0.5)",
-    textMuted: "#888888",
-    textPrimary: "#333333",
-    glow: "#a3b1c6", // soft blue-grey glow in light mode
+    textMuted: "#8a929e",
+    textPrimary: "#1E2938",
+    glow: "#006666", // primary-token glow in light mode
 };
 // ── Dark-mode detection ───────────────────────────────────────────────────────
 function resolveIsDark(hass) {
@@ -415,6 +415,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         const mt8 = Math.round(8 * sc);
         const rh = Math.round(18 * sc);
         el.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host { display: block; }
 
       ha-card {
@@ -430,7 +431,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
       }
 
       .title {
-        font-family:    var(--primary-font-family, sans-serif);
+        font-family:    var(--primary-font-family, 'Space Mono', monospace);
         font-size:      ${fs13}px;
         font-weight:    400;
         letter-spacing: 0.08em;
@@ -459,14 +460,14 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         position:    relative;
         height:      ${rh * 2}px;
         margin-top:  ${mt8}px;
-        font-family: var(--primary-font-family, sans-serif);
+        font-family: var(--primary-font-family, 'Space Mono', monospace);
         font-size:   ${fs11}px;
         color:       var(--text-medium-light-color, #666);
       }
       #min-display       { position: absolute; left:  ${mt8}px; top: 0; }
       #max-display       { position: absolute; right: ${mt8}px; top: 0; }
-      #min-value-display { position: absolute; left:  ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #e0e0e0); }
-      #max-value-display { position: absolute; right: ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, sans-serif); color: var(--primary-text-color, #e0e0e0); text-align: right; }
+      #min-value-display { position: absolute; left:  ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, 'Space Mono', monospace); color: var(--primary-text-color, #e0e0e0); }
+      #max-value-display { position: absolute; right: ${mt8}px; top: ${rh}px; font-family: var(--primary-font-family, 'Space Mono', monospace); color: var(--primary-text-color, #e0e0e0); text-align: right; }
 
       .value-wrap {
         display:         flex;
@@ -474,7 +475,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         margin-top:      ${mt4}px;
       }
       .value-wrap span {
-        font-family: var(--primary-font-family, sans-serif);
+        font-family: var(--primary-font-family, 'Space Mono', monospace);
         font-size:   ${fs22}px;
         font-weight: 500;
         color:       var(--primary-text-color, #e0e0e0);
@@ -494,7 +495,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
         gap:             ${Math.round(4 * sc)}px;
       }
       .value-center span {
-        font-family: var(--primary-font-family, sans-serif);
+        font-family: var(--primary-font-family, 'Space Mono', monospace);
         font-size:   ${fs32}px;
         font-weight: 500;
         color:       var(--primary-text-color, #e0e0e0);
@@ -504,7 +505,7 @@ class NeumorphicRotarySliderCard extends HTMLElement {
 
       /* ── minor label ── */
       .minor-label {
-        font-family:    var(--primary-font-family, sans-serif);
+        font-family:    var(--primary-font-family, 'Space Mono', monospace);
         font-size:      ${fs11}px;
         font-weight:    400;
         letter-spacing: 0.06em;

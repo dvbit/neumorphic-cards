@@ -24,7 +24,7 @@ show_swing: true             # swing mode buttons
 show_humidity: true          # humidity readout (if the entity reports it)
 
 # ── Colours ─────────────────────────────────────────────────────────────
-accent_color: "#4aa3df"      # tints the active preset/fan/swing buttons
+accent_color: "#006666"      # tints the active preset/fan/swing buttons
 
 # ── Typography ──────────────────────────────────────────────────────────
 # Every text block below is optional and shares the same fields:

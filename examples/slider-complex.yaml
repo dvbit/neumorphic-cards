@@ -15,11 +15,11 @@ show_icon_border: true
 display_only: false          # true = read-only (hides thumb/track/range)
 # ── Colours ──
 use_theme_colors: false      # true = pull all colours from HA theme vars
-color: "#e0c97f"
-background_color: "#e0e5ec"
+color: "#006666"
+background_color: "#E7E5E4"
 shadow_dark: "rgba(163,177,198,0.6)"
 shadow_light: "rgba(255,255,255,0.9)"
-text_color: "#3d4f6b"
+text_color: "#1E2938"
 label_color: "#8a9bb2"
 # ── Fill & glow ──
 fill_mode: solid             # solid | gradient
@@ -38,7 +38,7 @@ thumb_shape: round           # round | squircle | square
 thumb_shadow_size: 5
 # ── Icon ──
 icon: mdi:brightness-6
-icon_color: "#e0c97f"
+icon_color: "#006666"
 icon_size: 46
 icon_box_radius: 13
 icon_mdi_size: 22

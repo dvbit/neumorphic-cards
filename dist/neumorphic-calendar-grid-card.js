@@ -273,6 +273,7 @@ class NeumorphicCalendarGridCard extends HTMLElement {
         const softOut = `${Math.round(5 * sc)}px ${Math.round(5 * sc)}px ${Math.round(11 * sc)}px ${p.shadowDark}, -${Math.round(5 * sc)}px -${Math.round(5 * sc)}px ${Math.round(11 * sc)}px ${p.shadowLight}`;
         const softIn = `inset ${Math.round(3 * sc)}px ${Math.round(3 * sc)}px ${Math.round(6 * sc)}px ${p.shadowDark}, inset -${Math.round(3 * sc)}px -${Math.round(3 * sc)}px ${Math.round(6 * sc)}px ${p.shadowLight}`;
         el.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
       :host { display: block; }
       ha-card {
         display: flex;
