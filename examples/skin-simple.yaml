@@ -1,0 +1,8 @@
+# Neumorphic Skin — SIMPLE
+# Wrap any existing card in a neumorphic surface.
+type: custom:neumorphic-skin-card
+card:
+  type: entities
+  entities:
+    - sun.sun
+    - sensor.temperature

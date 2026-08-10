@@ -291,6 +291,32 @@ The clock parses `input_datetime` (state or `timestamp` attribute), full datetim
 
 ---
 
+## Neumorphic Skin (wrapper) — `custom:neumorphic-skin-card`
+
+[Simple](./examples/skin-simple.yaml) · [Complex](./examples/skin-complex.yaml)
+
+Wraps any existing Lovelace card in a neumorphic surface. Because HA cards render inside their own shadow DOM (which outside CSS can't pierce), the wrapper works on two levels that don't break encapsulation: it **frames** the child in a neumorphic surface, and it **injects theme CSS variables** onto the child so cards that read those variables (most built-ins — entities, glance, gauge, etc.) adopt the palette, fonts, and shadows. Cards that hardcode their own styles keep their internals by design.
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `card` | — | A single child card config. **Provide this or `cards`.** |
+| `cards` | — | A list of child card configs (stacked vertically). |
+| `style` | `raised` | `raised` \| `sunken` \| `flat`. |
+| `radius` | `20` | Corner radius (px). |
+| `depth` | `1` | Shadow-strength multiplier (0–3). |
+| `padding` | `16` | Inner padding (px). |
+| `gap` | `14` | Space between multiple children (px). |
+| `inject_vars` | `true` | Push neumorphic CSS variables into the children. |
+| `surface` | `#E7E5E4` | Surface colour (shadows derive from it, or override below). |
+| `shadow_dark` / `shadow_light` | derived | Override the neumorphic shadow colours. |
+| `accent_color` | `#006666` | Injected as `--primary-color` / `--accent-color`. |
+| `text_color` / `text_secondary` | spec tokens | Injected text colours. |
+| `font` | `Space Mono` | Injected as `--primary-font-family`. |
+
+> Note: the wrapper can't restyle the *internals* of cards that ignore theme variables (some third-party cards hardcode everything). For those, it still gives a cohesive neumorphic frame around the card.
+
+---
+
 ## Neumorphic Date Picker — `custom:datepicker-card`
 
 [Simple](./examples/datepicker-simple.yaml) · [Complex](./examples/datepicker-complex.yaml)

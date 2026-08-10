@@ -1,0 +1,27 @@
+# Neumorphic Skin — COMPLEX
+# Wrap one or several cards, with full control over the surface and the
+# neumorphic tokens injected into the children.
+type: custom:neumorphic-skin-card
+# Single child:  card: { ... }
+# Several:       cards: [ { ... }, { ... } ]
+cards:
+  - type: gauge
+    entity: sensor.cpu_temperature
+    name: CPU
+  - type: entities
+    entities:
+      - light.living_room
+      - switch.fan
+# ── Neumorphic frame ──
+style: raised            # raised | sunken | flat
+radius: 20               # corner radius px
+depth: 1.1               # shadow strength multiplier (0–3)
+padding: 18
+gap: 14                  # space between multiple children
+# ── Tokens injected into the children ──
+inject_vars: true        # cards that read theme vars adopt these
+surface: "#E7E5E4"
+accent_color: "#006666"
+text_color: "#1E2938"
+text_secondary: "#6b7280"
+font: "'Space Mono', monospace"
