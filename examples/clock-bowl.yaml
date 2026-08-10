@@ -1,0 +1,11 @@
+# Neumorphic Clock — BOWL face (deep shaded)
+# A deeply-shaded concave disc with a soft raised rim, like a knob carved into
+# the surface. Looks especially good in dark mode. Hands stay your hand_color.
+type: custom:neumorphic-clock-card
+entity: input_datetime.my_time
+face_style: bowl           # flat (default) | bowl
+card_size: 320
+hand_color: "#7c5cff"      # vibrant purple reads well on the shaded bowl
+seconds: false
+show_date: true
+date_format: long

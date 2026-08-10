@@ -9039,6 +9039,7 @@ class NeumorphicClockCard extends HTMLElement {
         this._rawConfig = config;
         this._config = Object.assign({
             card_size: 300,
+            face_style: "flat",
             hand_color: "#2f47d6",
             seconds: false,
             seconds_color: "#006666",
@@ -9220,7 +9221,8 @@ class NeumorphicClockCard extends HTMLElement {
                 const rOuter = r - 10, rInner = i % 3 === 0 ? r - 24 : r - 18;
                 const x1 = c + rOuter * Math.sin(ang), y1 = c - rOuter * Math.cos(ang);
                 const x2 = c + rInner * Math.sin(ang), y2 = c - rInner * Math.cos(ang);
-                ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${p.textFaint}" stroke-width="${i % 3 === 0 ? 3 : 1.6}" stroke-linecap="round" opacity="0.7"/>`;
+                const tickCol = cfg.face_style === "bowl" ? (this._isDark ? "#6a6f78" : "#9aa0aa") : p.textFaint;
+                ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${tickCol}" stroke-width="${i % 3 === 0 ? 3 : 1.6}" stroke-linecap="round" opacity="0.7"/>`;
             }
         }
         let numerals = "";
@@ -9228,35 +9230,102 @@ class NeumorphicClockCard extends HTMLElement {
             [[12, 0], [3, 90], [6, 180], [9, 270]].forEach(([n, deg]) => {
                 const ang = (deg / 180) * Math.PI, rr = r - 30;
                 const x = c + rr * Math.sin(ang), y = c - rr * Math.cos(ang);
-                numerals += `<text x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" text-anchor="middle" font-family="var(--primary-font-family,'Space Mono',monospace)" font-size="18" font-weight="700" fill="${p.textSecondary}">${n}</text>`;
+                const numCol = cfg.face_style === "bowl" ? (this._isDark ? "#c2c6cd" : "#7a8089") : p.textSecondary;
+                numerals += `<text x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" text-anchor="middle" font-family="var(--primary-font-family,'Space Mono',monospace)" font-size="18" font-weight="700" fill="${numCol}">${n}</text>`;
             });
         }
+
+        const discSvg = cfg.face_style === "bowl"
+            ? this._bowlFace(S, c, r, uid, p)
+            : this._flatFace(S, c, r, uid, p);
+
         wrap.innerHTML = `
       <svg viewBox="0 0 ${S} ${S}" role="img" aria-label="clock">
-        <defs>
+        ${discSvg.defs}
+        ${discSvg.body}
+        ${ticks}
+        ${numerals}
+        <g id="hands-g"></g>
+      </svg>`;
+    }
+
+    _flatFace(S, c, r, uid, p) {
+        return {
+            defs: `<defs>
           <radialGradient id="${uid}-face" cx="42%" cy="38%" r="75%">
             <stop offset="0%" stop-color="${p.shadowLight}" stop-opacity="0.55"/>
             <stop offset="60%" stop-color="${p.face}"/>
             <stop offset="100%" stop-color="${p.face}"/>
           </radialGradient>
           <filter id="${uid}-in" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="${6}" dy="${6}" stdDeviation="${10}" flood-color="${p.shadowDark}" flood-opacity="0.55"/>
-            <feDropShadow dx="${-6}" dy="${-6}" stdDeviation="${10}" flood-color="${p.shadowLight}" flood-opacity="0.9"/>
+            <feDropShadow dx="6" dy="6" stdDeviation="10" flood-color="${p.shadowDark}" flood-opacity="0.55"/>
+            <feDropShadow dx="-6" dy="-6" stdDeviation="10" flood-color="${p.shadowLight}" flood-opacity="0.9"/>
           </filter>
           <filter id="${uid}-hand" x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="${p.shadowDark}" flood-opacity="0.5"/>
           </filter>
-        </defs>
-        <!-- outer raised rim -->
-        <circle cx="${c}" cy="${c}" r="${r + 6}" fill="${p.surface}"
-          style="filter:drop-shadow(${Math.round(7)}px ${Math.round(7)}px ${Math.round(16)}px ${p.shadowDark}) drop-shadow(-${Math.round(7)}px -${Math.round(7)}px ${Math.round(16)}px ${p.shadowLight})"/>
-        <!-- recessed face -->
+        </defs>`,
+            body: `<circle cx="${c}" cy="${c}" r="${r + 6}" fill="${p.surface}"
+          style="filter:drop-shadow(7px 7px 16px ${p.shadowDark}) drop-shadow(-7px -7px 16px ${p.shadowLight})"/>
         <circle cx="${c}" cy="${c}" r="${r}" fill="url(#${uid}-face)"/>
-        <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${p.shadowDark}" stroke-opacity="0.25" stroke-width="2" filter="url(#${uid}-in)"/>
-        ${ticks}
-        ${numerals}
-        <g id="hands-g"></g>
-      </svg>`;
+        <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${p.shadowDark}" stroke-opacity="0.25" stroke-width="2" filter="url(#${uid}-in)"/>`,
+        };
+    }
+
+    // Deep concave bowl: raised outer rim, dark recessed ring, softly-lit interior,
+    // all heavily diffused for the organic, carved look.
+    _bowlFace(S, c, r, uid, p) {
+        const dark = this._isDark;
+        // Bowl palette (independent of card bg so it reads dimensional on any surface).
+        const rimHi = dark ? "#3a3f47" : "#f2f0ef";
+        const rimBase = dark ? "#2b2f36" : "#e4e2e1";
+        const ringDark = dark ? "#141619" : "#b9b6b4";   // the recessed shadow ring
+        const bowlEdge = dark ? "#202329" : "#cfcdcc";
+        const bowlCenter = dark ? "#33383f" : "#eceae9";  // lit interior floor
+        const litHi = dark ? "#454b54" : "#fbfbfa";
+        return {
+            defs: `<defs>
+          <!-- raised outer rim: light from top-left -->
+          <radialGradient id="${uid}-rim" cx="40%" cy="34%" r="70%">
+            <stop offset="0%" stop-color="${rimHi}"/>
+            <stop offset="70%" stop-color="${rimBase}"/>
+            <stop offset="100%" stop-color="${dark ? "#23262c" : "#dad8d7"}"/>
+          </radialGradient>
+          <!-- concave interior: dark at the edge (shadow ring), lit toward centre-bottom -->
+          <radialGradient id="${uid}-bowl" cx="50%" cy="46%" r="58%">
+            <stop offset="0%" stop-color="${bowlCenter}"/>
+            <stop offset="55%" stop-color="${bowlCenter}"/>
+            <stop offset="82%" stop-color="${bowlEdge}"/>
+            <stop offset="100%" stop-color="${ringDark}"/>
+          </radialGradient>
+          <!-- soft top highlight crescent inside the bowl -->
+          <radialGradient id="${uid}-lit" cx="50%" cy="72%" r="46%">
+            <stop offset="0%" stop-color="${litHi}" stop-opacity="${dark ? 0.5 : 0.7}"/>
+            <stop offset="70%" stop-color="${litHi}" stop-opacity="0"/>
+            <stop offset="100%" stop-color="${litHi}" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="${uid}-soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="7"/>
+          </filter>
+          <filter id="${uid}-soft2" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="12"/>
+          </filter>
+          <filter id="${uid}-hand" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="1" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="${dark ? 0.45 : 0.3}"/>
+          </filter>
+        </defs>`,
+            body: `
+        <!-- raised rim (whole face) -->
+        <circle cx="${c}" cy="${c}" r="${r + 8}" fill="url(#${uid}-rim)"/>
+        <!-- dark recessed shadow ring, blurred, sitting under the rim's inner edge -->
+        <circle cx="${c}" cy="${c + 3}" r="${r - 2}" fill="none" stroke="${ringDark}" stroke-width="16" opacity="${dark ? 0.9 : 0.55}" filter="url(#${uid}-soft2)"/>
+        <!-- concave interior -->
+        <circle cx="${c}" cy="${c}" r="${r - 6}" fill="url(#${uid}-bowl)" filter="url(#${uid}-soft)"/>
+        <!-- lit crescent toward the bottom of the bowl -->
+        <circle cx="${c}" cy="${c}" r="${r - 10}" fill="url(#${uid}-lit)" filter="url(#${uid}-soft)"/>
+        <!-- faint top inner shadow to deepen the concavity -->
+        <ellipse cx="${c}" cy="${c - r * 0.42}" rx="${r * 0.62}" ry="${r * 0.34}" fill="${ringDark}" opacity="${dark ? 0.5 : 0.28}" filter="url(#${uid}-soft2)"/>`,
+        };
     }
 
     _renderHands() {
@@ -9386,7 +9455,7 @@ class NeumorphicClockCardEditor extends HTMLElement {
       ${this._sec("entity", "🕐 Time Source", `
         <div class="field"><label>Time entity (blank = live wall clock)</label>${this._entityPicker("entity", ["input_datetime", "sensor"], "input_datetime.my_time")}</div>
         <div class="field"><label>Date entity for caption (optional)</label>${this._entityPicker("date_entity", ["input_datetime", "sensor"], "input_datetime.my_date")}</div>`)}
-      ${this._sec("layout", "📐 Layout", `${this._range("card_size", "Clock size (px)", 180, 460, 10, "px", 300)}${this._toggle("seconds", "Show seconds hand")}${this._toggle("smooth", "Smooth sweep (vs ticking)")}${this._toggle("show_ticks", "Show hour ticks")}${this._toggle("show_numerals", "Show 12/3/6/9 numerals")}${this._toggle("no_border", "No border / transparent")}`)}
+      ${this._sec("layout", "📐 Layout", `${this._select("face_style", "Face style", [{ value: "flat", label: "Flat (soft recessed)" }, { value: "bowl", label: "Bowl (deep shaded)" }])}${this._range("card_size", "Clock size (px)", 180, 460, 10, "px", 300)}${this._toggle("seconds", "Show seconds hand")}${this._toggle("smooth", "Smooth sweep (vs ticking)")}${this._toggle("show_ticks", "Show hour ticks")}${this._toggle("show_numerals", "Show 12/3/6/9 numerals")}${this._toggle("no_border", "No border / transparent")}`)}
       ${this._sec("colors", "🎨 Colours", `${this._color("hand_color", "Hands (hour + minute)", "#2f47d6")}${this._color("seconds_color", "Seconds hand", "#006666")}`)}
       ${this._sec("date", "📅 Date Caption", `${this._toggle("show_date", "Show date caption", true)}${this._select("date_format", "Format", [{ value: "long", label: "Sunday, July 25" }, { value: "short", label: "Sun, Jul 25" }, { value: "weekday", label: "Sunday" }, { value: "numeric", label: "07/25/2025" }])}${this._labelBlock("date_label", true)}`)}
     `;

@@ -274,6 +274,7 @@ The **player switcher** is a UI-only selection — tapping a chip changes which 
 |-----|---------|-------------|
 | `entity` | — | Time source: `input_datetime.*`, or a `sensor` with a time / ISO-timestamp value. Omit for a **live wall clock**. |
 | `date_entity` | — | Optional entity that drives the date caption (else the time entity's date, else today). |
+| `face_style` | `flat` | `flat` (soft recessed face) \| `bowl` (deep-shaded concave disc with a raised rim). |
 | `card_size` | `300` | Disc width in px (180–460). |
 | `hand_color` | `#2f47d6` | Hour + minute hand colour. |
 | `seconds` | `false` | Show the thin seconds hand. |
