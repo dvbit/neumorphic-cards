@@ -35,7 +35,9 @@ class NeuCardEditorBase extends HTMLElement {
     return this._inp("entity",placeholder);
   }
   _fire(){this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true}));}
-  _set(path,value){const parts=path.split(".");let obj=this._config;while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}obj[parts[0]]=value;this._fire();this._render();}
+  _write(path,value){const parts=path.split(".");let obj=this._config;while(parts.length>1){const k=parts.shift();if(!obj[k])obj[k]={};obj=obj[k];}obj[parts[0]]=value;}
+  _set(path,value){this._write(path,value);this._fire();this._render();}
+  _setQuiet(path,value){this._write(path,value);this._fire();}
   _get(path,def=""){const parts=path.split(".");let obj=this._config;for(const k of parts){if(obj==null)return def;obj=obj[k];}return obj??def;}
   static get FONTS(){return[["","Default"],["'Space Mono',monospace","Space Mono"],["'JetBrains Mono',monospace","JetBrains Mono"],["'Nunito',sans-serif","Nunito"],["'Roboto',sans-serif","Roboto"],["'Open Sans',sans-serif","Open Sans"],["'Lato',sans-serif","Lato"],["'Raleway',sans-serif","Raleway"],["'Montserrat',sans-serif","Montserrat"],["'Oswald',sans-serif","Oswald"],["'Playfair Display',serif","Playfair Display"],["'Merriweather',serif","Merriweather"],["'Source Code Pro',monospace","Source Code Pro"],["'DM Sans',sans-serif","DM Sans"],["'Quicksand',sans-serif","Quicksand"]];}
   static get POS(){return["top","bottom","left","right","none"];}
@@ -43,7 +45,7 @@ class NeuCardEditorBase extends HTMLElement {
   static get TRANSFORMS(){return["none","uppercase","lowercase","capitalize","full-width"];}
   _sel(path,opts,labels){const cur=this._get(path,opts[0]);return`<select data-path="${path}">${opts.map((o,i)=>`<option value="${o}"${o===cur?" selected":""}>${labels?labels[i]:o}</option>`).join("")}</select>`;}
   _inp(path,ph="",type="text"){return`<input type="${type}" data-path="${path}" value="${this._get(path)}" placeholder="${ph}"/>`;}
-  _colorRow(path){const cur=this._get(path,"")||"#8fa0b8";return`<input type="color" data-path="${path}" value="${cur}"/><input type="text" data-path="${path}" value="${this._get(path)}" placeholder="blank = theme"/>`;}
+  _colorRow(path){const cur=this._get(path,"")||"#8fa0b8";return`<input type="color" data-path="${path}" data-colorpair="${path}" value="${cur}"/><input type="text" data-path="${path}" data-colorpair="${path}" value="${this._get(path)}" placeholder="blank = theme"/>`;}
   _fontSel(path){return this._sel(path,NeuCardEditorBase.FONTS.map(f=>f[0]),NeuCardEditorBase.FONTS.map(f=>f[1]));}
   _section(title,...rows){return`<div class="section"><div class="section-title">${title}</div>${rows.join("")}</div>`;}
   _row(label,content){return`<div class="row"><label>${label}</label><div class="ctrl">${content}</div></div>`;}
@@ -75,13 +77,22 @@ class NeuCardEditorBase extends HTMLElement {
     }
     this.shadowRoot.querySelectorAll("[data-path]").forEach(el=>{
       if(el.id==="entity_picker")return;
-      const update=e=>{
-        const val=el.type==="checkbox"?String(el.checked):el.value;
-        this._set(e.target.dataset.path,val);
-      };
-      el.addEventListener("change",update);
-      if(el.tagName==="INPUT"&&el.type!=="color"&&el.type!=="checkbox")
-        el.addEventListener("input",update);
+      const isStructural = el.tagName === "SELECT" || el.type === "checkbox";
+      if (isStructural) {
+        el.addEventListener("change", () => this._set(el.dataset.path, el.type==="checkbox"?String(el.checked):el.value));
+      } else {
+        const syncPair = () => {
+          if (!el.dataset.colorpair) return;
+          const v = el.value;
+          this.shadowRoot.querySelectorAll(`[data-colorpair="${el.dataset.colorpair}"]`).forEach(other => {
+            if (other === el) return;
+            if (other.type === "color") { if (/^#[0-9a-fA-F]{6}$/.test(v)) other.value = v; }
+            else other.value = v;
+          });
+        };
+        el.addEventListener("input", () => { syncPair(); this._setQuiet(el.dataset.path, el.value); });
+        el.addEventListener("change", () => { syncPair(); this._setQuiet(el.dataset.path, el.value); });
+      }
     });
   }
 }
