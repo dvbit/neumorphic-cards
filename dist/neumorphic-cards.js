@@ -8397,7 +8397,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
 
         card.querySelector("#mp-back").addEventListener("click", () => this._moreInfo());
         card.querySelector("#mp-menu").addEventListener("click", () => this._moreInfo());
-        card.querySelector("#mp-group").addEventListener("click", () => { this._groupingOpen = !this._groupingOpen; this._render(); });
+        // #mp-group is handled through delegation (see _onDelegatedClick).
 
         // Event delegation on the STABLE root. The rows below (transport, volume,
         // extras, source, switcher, seek bar) are rebuilt on every hass update,
@@ -8408,20 +8408,38 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         card.addEventListener("change", (e) => this._onDelegatedChange(e));
     }
 
-    // Walk up from the event target to find an element carrying data-mpaction /
-    // an id we handle, since clicks often land on an inner <svg>/<path>.
-    _closestAction(node) {
-        let el = node;
+    // IDs the delegated click handler actually acts on. Restricting to these
+    // avoids stopping the search early on an unrelated ancestor that merely has
+    // an id (e.g. a wrapper div), which previously swallowed the event.
+    static get _CLICK_IDS() { return ["mp-play", "mp-prev", "mp-next", "mp-mute", "mp-shuffle", "mp-repeat", "mp-poweron", "mp-bar", "mp-vbar", "mp-group"]; }
+
+    // Resolve the actionable element from an event. Prefer composedPath() (which
+    // correctly crosses shadow boundaries and lists every node under the
+    // pointer); fall back to a manual parent walk. Match either an element with
+    // data-mpaction, or one whose id is in the handled set.
+    _closestAction(e) {
+        const handled = NeumorphicMediaPlayerCard._CLICK_IDS;
+        const path = (e && typeof e.composedPath === "function") ? e.composedPath() : null;
+        if (path && path.length) {
+            for (const node of path) {
+                if (!node || node === this.shadowRoot) break;
+                if (node.dataset && node.dataset.mpaction) return node;
+                if (node.id && handled.indexOf(node.id) !== -1) return node;
+            }
+            return null;
+        }
+        let el = e && e.target;
         const root = this.shadowRoot;
         while (el && el !== root) {
-            if (el.dataset && (el.dataset.mpaction || el.id)) return el;
+            if (el.dataset && el.dataset.mpaction) return el;
+            if (el.id && handled.indexOf(el.id) !== -1) return el;
             el = el.parentNode || (el.getRootNode && el.getRootNode().host);
         }
         return null;
     }
 
     _onDelegatedClick(e) {
-        const el = this._closestAction(e.composedPath ? e.composedPath()[0] : e.target);
+        const el = this._closestAction(e);
         if (!el) return;
         const s = this._stateObj;
         const id = el.id;
@@ -8464,6 +8482,8 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             this._svc("volume_set", { volume_level: Math.round(frac * 100) / 100 });
             return;
         }
+        // Speaker-grouping panel toggle (UI only — allowed regardless of display_only).
+        if (id === "mp-group") { this._groupingOpen = !this._groupingOpen; this._render(); return; }
         if (this._config.display_only) return;
         switch (id) {
             case "mp-play": {
