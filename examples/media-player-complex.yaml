@@ -9,7 +9,8 @@ name: Playing                # header centre label (or use header_label.text)
 card_size: 340               # px (260–460)
 accent_color: "#006666"      # progress fill + play icon + active chip
 art_shape: circle            # circle | squircle | square
-spin_art: false              # slowly rotate circular art while playing
+spin_art: true               # rotate the circular art (pauses when playback pauses)
+spin_speed: 12               # seconds per rotation
 # ── Sections (buttons still only appear if the entity supports them) ──
 show_player_switcher: true   # chip row to switch which player the card controls
 show_grouping: true          # header cast icon → join/unjoin speakers

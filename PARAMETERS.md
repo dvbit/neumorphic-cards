@@ -250,7 +250,8 @@ Several cards accept **label blocks** — nested objects that configure one piec
 | `card_size` | `340` | Base width in px (260–460). |
 | `accent_color` | `#006666` | Progress fill, play icon, and active chip colour. |
 | `art_shape` | `circle` | `circle` \| `squircle` \| `square`. |
-| `spin_art` | `false` | Slowly rotate circular art while playing. |
+| `spin_art` | `true` | Rotate the (circular) album art; rotation pauses when playback pauses. |
+| `spin_speed` | `12` | Seconds per rotation (2–60). |
 | `show_player_switcher` | `true` | Chip row to switch which player the card controls (auto-hidden with a single player). |
 | `show_grouping` | `true` | Header cast icon → panel to join/unjoin speakers (needs `GROUPING`). |
 | `show_header` | `true` | Back / label / menu row. |

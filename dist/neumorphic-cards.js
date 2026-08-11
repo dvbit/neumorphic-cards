@@ -8244,6 +8244,8 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             card_size: 340,
             accent_color: "#006666",
             art_shape: "circle",
+            spin_art: true,
+            spin_speed: 12,
             show_header: true,
             show_progress: true,
             show_volume: false,
@@ -8362,6 +8364,87 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         card.querySelector("#mp-back").addEventListener("click", () => this._moreInfo());
         card.querySelector("#mp-menu").addEventListener("click", () => this._moreInfo());
         card.querySelector("#mp-group").addEventListener("click", () => { this._groupingOpen = !this._groupingOpen; this._render(); });
+
+        // Event delegation on the STABLE root. The rows below (transport, volume,
+        // extras, source, switcher, seek bar) are rebuilt on every hass update,
+        // so listeners bound inside their render methods would be lost — and a
+        // re-render landing between press and click would swallow the tap. One
+        // handler on the persistent root fixes that.
+        card.addEventListener("click", (e) => this._onDelegatedClick(e));
+        card.addEventListener("change", (e) => this._onDelegatedChange(e));
+    }
+
+    // Walk up from the event target to find an element carrying data-mpaction /
+    // an id we handle, since clicks often land on an inner <svg>/<path>.
+    _closestAction(node) {
+        let el = node;
+        const root = this.shadowRoot;
+        while (el && el !== root) {
+            if (el.dataset && (el.dataset.mpaction || el.id)) return el;
+            el = el.parentNode || (el.getRootNode && el.getRootNode().host);
+        }
+        return null;
+    }
+
+    _onDelegatedClick(e) {
+        const el = this._closestAction(e.composedPath ? e.composedPath()[0] : e.target);
+        if (!el) return;
+        const s = this._stateObj;
+        const id = el.id;
+        const act = el.dataset ? el.dataset.mpaction : null;
+
+        // Player switcher chip
+        if (act === "switch") {
+            const ent = el.dataset.ent;
+            if (ent && ent !== this._activeEntity) {
+                this._activeEntity = ent; this._groupingOpen = false; this._seekPending = null;
+                this._updateStyle(); this._render();
+            }
+            return;
+        }
+        // Grouping row
+        if (act === "grouprow") {
+            const ent = el.dataset.ent;
+            const joined = (s && (s.attributes.group_members || []).includes(ent));
+            const master = this._activeEntity;
+            if (joined) this._hass.callService("media_player", "unjoin", { entity_id: ent });
+            else this._hass.callService("media_player", "join", { entity_id: master, group_members: [ent] });
+            return;
+        }
+        // Seek bar
+        if (id === "mp-bar") {
+            if (this._config.display_only || !this._supports(MF.SEEK)) return;
+            const rect = el.getBoundingClientRect();
+            const frac = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+            const target = Math.round(frac * this._duration);
+            this._seekPending = target; this._renderProgress();
+            this._svc("media_seek", { seek_position: target });
+            setTimeout(() => { this._seekPending = null; }, 1500);
+            return;
+        }
+        // Volume bar
+        if (id === "mp-vbar") {
+            if (this._config.display_only) return;
+            const rect = el.getBoundingClientRect();
+            const frac = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+            this._svc("volume_set", { volume_level: Math.round(frac * 100) / 100 });
+            return;
+        }
+        if (this._config.display_only) return;
+        switch (id) {
+            case "mp-play": this._svc("media_play_pause"); break;
+            case "mp-prev": if (this._supports(MF.PREVIOUS_TRACK)) this._svc("media_previous_track"); break;
+            case "mp-next": if (this._supports(MF.NEXT_TRACK)) this._svc("media_next_track"); break;
+            case "mp-mute": { const muted = s && !!s.attributes.is_volume_muted; this._svc("volume_mute", { is_volume_muted: !muted }); break; }
+            case "mp-shuffle": { const sh = s && !!s.attributes.shuffle; this._svc("shuffle_set", { shuffle: !sh }); break; }
+            case "mp-repeat": { const r = (s && s.attributes.repeat) || "off"; const nx = r === "off" ? "all" : r === "all" ? "one" : "off"; this._svc("repeat_set", { repeat: nx }); break; }
+            case "mp-poweron": if (this._supports(MF.TURN_ON)) this._svc("turn_on"); break;
+        }
+    }
+
+    _onDelegatedChange(e) {
+        const el = e.target;
+        if (el && el.id === "mp-src") this._svc("select_source", { source: el.value });
     }
 
     _chevron() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>`; }
@@ -8403,7 +8486,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         box-shadow:${softOutSm}; cursor:pointer; -webkit-tap-highlight-color:transparent;
         transition:box-shadow .12s ease, color .12s ease, transform .05s ease;
       }
-      .hbtn svg { width:${Math.round(18 * sc)}px; height:${Math.round(18 * sc)}px; }
+      .hbtn svg { width:${Math.round(18 * sc)}px; height:${Math.round(18 * sc)}px; pointer-events:none; }
       .hbtn:active { box-shadow:${softIn}; transform:translateY(0.5px); }
       .hlabel { font-size:${(12 * sc).toFixed(1)}px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${p.textSecondary}; }
       .hright { display:flex; align-items:center; gap:${Math.round(8 * sc)}px; }
@@ -8421,6 +8504,8 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       }
       .chip-sw svg { width:${Math.round(14 * sc)}px; height:${Math.round(14 * sc)}px; flex-shrink:0; }
       .chip-sw span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .chip-sw span, .chip-sw svg, .chip-sw .live { pointer-events:none; }
+      .group-row * { pointer-events:none; }
       .chip-sw.active { color:${accent}; box-shadow:${softIn}; }
       .chip-sw .live { width:${Math.round(6 * sc)}px; height:${Math.round(6 * sc)}px; border-radius:50%; background:${accent}; flex-shrink:0; }
 
@@ -8449,7 +8534,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       }
       .art-img.placeholder { display:flex; align-items:center; justify-content:center; color:${p.textFaint}; }
       .art-img.placeholder svg { width:38%; height:38%; opacity:0.5; }
-      .art-img.spin { animation:mp-spin 8s linear infinite; }
+      .art-img.spin { animation:mp-spin ${clamp(Number(cfg.spin_speed) || 12, 2, 60)}s linear infinite; }
       @keyframes mp-spin { to { transform:rotate(360deg); } }
 
       .meta { text-align:center; margin-bottom:${Math.round(18 * sc)}px; }
@@ -8470,10 +8555,10 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       .volume { display:flex; align-items:center; gap:${Math.round(12 * sc)}px; margin-bottom:${Math.round(18 * sc)}px; }
       .volume.hidden { display:none; }
       .vbtn { width:${Math.round(34 * sc)}px; height:${Math.round(34 * sc)}px; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:none; border-radius:50%; background:${p.surface}; color:${p.textSecondary}; box-shadow:${softOutSm}; cursor:pointer; }
-      .vbtn svg { width:${Math.round(17 * sc)}px; height:${Math.round(17 * sc)}px; }
+      .vbtn svg { width:${Math.round(17 * sc)}px; height:${Math.round(17 * sc)}px; pointer-events:none; }
       .vbtn.active { color:${accent}; box-shadow:${softIn}; }
       .vbar { position:relative; flex:1; height:${Math.round(7 * sc)}px; border-radius:${Math.round(4 * sc)}px; background:${p.surface}; box-shadow:${softIn}; cursor:${cfg.display_only ? "default" : "pointer"}; }
-      .vbar-fill { position:absolute; top:0; left:0; height:100%; border-radius:${Math.round(4 * sc)}px; background:${accent}; }
+      .vbar-fill { position:absolute; top:0; left:0; height:100%; border-radius:${Math.round(4 * sc)}px; background:${accent}; pointer-events:none; }
 
       .transport { display:flex; align-items:center; justify-content:center; gap:${Math.round(22 * sc)}px; margin-bottom:${Math.round(20 * sc)}px; }
       .transport.hidden { display:none; }
@@ -8484,7 +8569,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         transition:box-shadow .12s ease, transform .05s ease;
         width:${Math.round(56 * sc)}px; height:${Math.round(56 * sc)}px;
       }
-      .tbtn svg { width:${Math.round(24 * sc)}px; height:${Math.round(24 * sc)}px; }
+      .tbtn svg { width:${Math.round(24 * sc)}px; height:${Math.round(24 * sc)}px; pointer-events:none; }
       .tbtn:active { box-shadow:${softIn}; transform:translateY(0.5px); }
       .tbtn.play { width:${Math.round(74 * sc)}px; height:${Math.round(74 * sc)}px; color:${accent}; }
       .tbtn.play svg { width:${Math.round(30 * sc)}px; height:${Math.round(30 * sc)}px; }
@@ -8494,7 +8579,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       .extras { display:flex; align-items:center; justify-content:space-between; }
       .extras.hidden { display:none; }
       .xbtn { width:${Math.round(40 * sc)}px; height:${Math.round(40 * sc)}px; display:flex; align-items:center; justify-content:center; border:none; border-radius:${Math.round(12 * sc)}px; background:${p.surface}; color:${p.textSecondary}; box-shadow:${softOutSm}; cursor:pointer; }
-      .xbtn svg { width:${Math.round(18 * sc)}px; height:${Math.round(18 * sc)}px; }
+      .xbtn svg { width:${Math.round(18 * sc)}px; height:${Math.round(18 * sc)}px; pointer-events:none; }
       .xbtn.active { color:${accent}; box-shadow:${softIn}; }
 
       .source { margin-top:${Math.round(16 * sc)}px; }
@@ -8605,21 +8690,11 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             const active = pl.entity === this._activeEntity;
             const playing = st && st.state === "playing";
             const icon = pl.icon ? "" : this._speakerIcon();
-            return `<button class="chip-sw ${active ? "active" : ""}" data-ent="${pl.entity}" title="${name}">
+            return `<button class="chip-sw ${active ? "active" : ""}" data-mpaction="switch" data-ent="${pl.entity}" title="${name}">
               ${playing && !active ? `<span class="live"></span>` : icon}
               <span>${name}</span></button>`;
         }).join("");
-        wrap.querySelectorAll(".chip-sw").forEach((b) => {
-            b.addEventListener("click", () => {
-                if (b.dataset.ent !== this._activeEntity) {
-                    this._activeEntity = b.dataset.ent;
-                    this._groupingOpen = false;
-                    this._seekPending = null;
-                    this._updateStyle();
-                    this._render();
-                }
-            });
-        });
+        // Clicks handled by delegation on the card root.
     }
     _speakerIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="14" r="3.5"/><circle cx="12" cy="6" r="1"/></svg>`; }
 
@@ -8647,19 +8722,12 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             const st = this._hass.states[ent];
             const nm = st.attributes.friendly_name || ent.split(".")[1];
             const joined = grouped.includes(ent);
-            html += `<div class="group-row" data-ent="${ent}"><span class="gname">${nm}</span>
+            html += `<div class="group-row" data-mpaction="grouprow" data-ent="${ent}"><span class="gname">${nm}</span>
               <span class="gcheck ${joined ? "on" : ""}">${joined ? this._checkIcon() : ""}</span></div>`;
         }
         if (!candidates.length) html += `<div class="group-row"><span class="gname" style="opacity:.6">${this._t("no_group")}</span></div>`;
         panel.innerHTML = html;
-        panel.querySelectorAll(".group-row[data-ent]").forEach((row) => {
-            row.addEventListener("click", () => {
-                const ent = row.dataset.ent;
-                const joined = (s.attributes.group_members || []).includes(ent);
-                if (joined) this._hass.callService("media_player", "unjoin", { entity_id: ent });
-                else this._hass.callService("media_player", "join", { entity_id: master, group_members: [ent] });
-            });
-        });
+        // Clicks handled by delegation on the card root.
     }
     _checkIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>`; }
 
@@ -8674,16 +8742,29 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         if (pic) {
             if (pic.startsWith("http")) url = pic;
             else if (pic.startsWith("/")) {
-                // Resolve relative to HA base; hassUrl() may not exist on all versions.
                 if (this._hass && typeof this._hass.hassUrl === "function") url = this._hass.hassUrl(pic);
-                else url = pic; // browser resolves against current origin
+                else url = pic;
             } else url = pic;
         }
-        const spin = this._config.art_shape === "circle" && this._config.spin_art && s.state === "playing" ? " spin" : "";
-        if (url) {
-            wrap.innerHTML = `<div class="art-disc"><div class="art-img${spin}" style="background-image:url('${url}')"></div></div>`;
-        } else {
-            wrap.innerHTML = `<div class="art-disc"><div class="art-img placeholder">${this._noteIcon()}</div></div>`;
+        const circle = this._config.art_shape === "circle";
+        const wantSpin = circle && this._config.spin_art !== false && !!url;
+        const playing = s.state === "playing";
+
+        // Only rebuild the DOM when the image or shape actually changes — otherwise
+        // the CSS rotation would restart from 0° on every hass update and stutter.
+        const sig = `${url || "none"}|${circle}|${wantSpin}`;
+        if (this._artSig !== sig) {
+            this._artSig = sig;
+            if (url) {
+                wrap.innerHTML = `<div class="art-disc"><div class="art-img${wantSpin ? " spin" : ""}" style="background-image:url('${url}')"></div></div>`;
+            } else {
+                wrap.innerHTML = `<div class="art-disc"><div class="art-img placeholder">${this._noteIcon()}</div></div>`;
+            }
+        }
+        // Pause/resume the rotation with play state WITHOUT restarting it.
+        if (wantSpin) {
+            const img = wrap.querySelector(".art-img.spin");
+            if (img) img.style.animationPlayState = playing ? "running" : "paused";
         }
     }
     _noteIcon() { return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>`; }
@@ -8724,21 +8805,10 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         wrap.innerHTML = `
       <div class="times"><span>${fmtTime(pos)}</span><span>${fmtTime(this._duration)}</span></div>
       <div class="bar" id="mp-bar">
-        <div class="bar-fill" style="width:${pct}%"></div>
-        <div class="bar-knob" style="left:${pct}%"></div>
+        <div class="bar-fill" style="width:${pct}%; pointer-events:none;"></div>
+        <div class="bar-knob" style="left:${pct}%; pointer-events:none;"></div>
       </div>`;
-        if (!this._config.display_only && this._supports(MF.SEEK)) {
-            const bar = wrap.querySelector("#mp-bar");
-            bar.addEventListener("click", (e) => {
-                const rect = bar.getBoundingClientRect();
-                const frac = clamp((e.clientX - rect.left) / rect.width, 0, 1);
-                const target = Math.round(frac * this._duration);
-                this._seekPending = target;
-                this._renderProgress();
-                this._svc("media_seek", { seek_position: target });
-                setTimeout(() => { this._seekPending = null; }, 1500);
-            });
-        }
+        // Seek handled by delegation on the card root.
     }
 
     _renderVolume() {
@@ -8754,16 +8824,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         wrap.innerHTML = `
       ${canMute ? `<button class="vbtn ${muted ? "active" : ""}" id="mp-mute" aria-label="Mute">${muted ? this._muteIcon() : this._volIcon()}</button>` : ""}
       <div class="vbar" id="mp-vbar"><div class="vbar-fill" style="width:${(muted ? 0 : vol) * 100}%"></div></div>`;
-        if (!this._config.display_only) {
-            const mb = wrap.querySelector("#mp-mute");
-            if (mb) mb.addEventListener("click", () => this._svc("volume_mute", { is_volume_muted: !muted }));
-            const vb = wrap.querySelector("#mp-vbar");
-            vb.addEventListener("click", (e) => {
-                const rect = vb.getBoundingClientRect();
-                const frac = clamp((e.clientX - rect.left) / rect.width, 0, 1);
-                this._svc("volume_set", { volume_level: Math.round(frac * 100) / 100 });
-            });
-        }
+        // Clicks handled by delegation on the card root.
     }
     _volIcon() { return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M16 8a5 5 0 010 8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`; }
     _muteIcon() { return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 5V4L8 9H4z"/><path d="M22 9l-6 6M16 9l6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`; }
@@ -8783,9 +8844,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
       <button class="tbtn ${canPrev ? "" : "disabled"}" id="mp-prev" aria-label="Previous">${this._prevIcon()}</button>
       <button class="tbtn play" id="mp-play" aria-label="${playing ? "Pause" : "Play"}">${playing ? this._pauseIcon() : this._playIcon()}</button>
       <button class="tbtn ${canNext ? "" : "disabled"}" id="mp-next" aria-label="Next">${this._nextIcon()}</button>`;
-        wrap.querySelector("#mp-play").addEventListener("click", () => this._svc("media_play_pause"));
-        if (canPrev) wrap.querySelector("#mp-prev").addEventListener("click", () => this._svc("media_previous_track"));
-        if (canNext) wrap.querySelector("#mp-next").addEventListener("click", () => this._svc("media_next_track"));
+        // Clicks handled by delegation on the card root (see _onDelegatedClick).
     }
     _prevIcon() { return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6L10 12l10 6V6z"/></svg>`; }
     _nextIcon() { return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l10 6L4 18V6z"/></svg>`; }
@@ -8807,11 +8866,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         wrap.innerHTML = `
       ${canShuffle ? `<button class="xbtn ${shuffle ? "active" : ""}" id="mp-shuffle" aria-label="Shuffle">${this._shuffleIcon()}</button>` : `<span style="width:1px"></span>`}
       ${canRepeat ? `<button class="xbtn ${repeat !== "off" ? "active" : ""}" id="mp-repeat" aria-label="Repeat">${repeat === "one" ? this._repeatOneIcon() : this._repeatIcon()}</button>` : `<span style="width:1px"></span>`}`;
-        if (canShuffle) wrap.querySelector("#mp-shuffle").addEventListener("click", () => this._svc("shuffle_set", { shuffle: !shuffle }));
-        if (canRepeat) wrap.querySelector("#mp-repeat").addEventListener("click", () => {
-            const nextR = repeat === "off" ? "all" : repeat === "all" ? "one" : "off";
-            this._svc("repeat_set", { repeat: nextR });
-        });
+        // Clicks handled by delegation on the card root.
     }
     _shuffleIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>`; }
     _repeatIcon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>`; }
@@ -8827,7 +8882,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         wrap.classList.remove("hidden");
         const cur = s.attributes.source;
         wrap.innerHTML = `<select id="mp-src">${list.map((x) => `<option value="${String(x).replace(/"/g, "&quot;")}"${x === cur ? " selected" : ""}>${x}</option>`).join("")}</select>`;
-        wrap.querySelector("#mp-src").addEventListener("change", (e) => this._svc("select_source", { source: e.target.value }));
+        // Change handled by delegation on the card root.
     }
 
     // ── Services ────────────────────────────────────────────────────────────────
@@ -8916,7 +8971,7 @@ class NeumorphicMediaPlayerCardEditor extends HTMLElement {
         <textarea data-path="__entities__" placeholder="media_player.kitchen&#10;media_player.bedroom" style="width:100%;min-height:60px;padding:8px 10px;border-radius:6px;border:1px solid var(--divider-color,#d1d5db);background:var(--card-background-color,#fff);color:var(--primary-text-color,#111);font-size:12px;font-family:monospace;box-sizing:border-box;">${this._entitiesText()}</textarea>
         <small class="font-hint">The primary entity plus these appear as switch chips. Leave blank for a single player.</small></div>
         ${this._text("name", "Header label", "Playing")}`)}
-      ${this._sec("layout", "📐 Layout", `${this._range("card_size", "Card width (px)", 260, 460, 10, "px", 340)}${this._select("art_shape", "Album art shape", [{ value: "circle", label: "Circle" }, { value: "squircle", label: "Squircle" }, { value: "square", label: "Square" }])}${this._toggle("spin_art", "Spin circular art while playing")}${this._toggle("no_border", "No border / transparent background")}${this._toggle("display_only", "Display only — hide controls")}`)}
+      ${this._sec("layout", "📐 Layout", `${this._range("card_size", "Card width (px)", 260, 460, 10, "px", 340)}${this._select("art_shape", "Album art shape", [{ value: "circle", label: "Circle" }, { value: "squircle", label: "Squircle" }, { value: "square", label: "Square" }])}${this._toggle("spin_art", "Rotate circular art", true)}${this._range("spin_speed", "Rotation speed (sec/turn)", 2, 60, 1, "s", 12)}${this._toggle("no_border", "No border / transparent background")}${this._toggle("display_only", "Display only — hide controls")}`)}
       ${this._sec("sections", "🎛 Sections", `${this._toggle("show_player_switcher", "Player switcher chips", true)}${this._toggle("show_grouping", "Speaker grouping button", true)}${this._toggle("show_header", "Header row (back / label / menu)", true)}${this._toggle("show_progress", "Progress bar + times", true)}${this._toggle("show_volume", "Volume row")}${this._toggle("show_shuffle_repeat", "Shuffle / repeat row", true)}${this._toggle("show_source", "Source dropdown")}`)}
       ${this._sec("colors", "🎨 Colours", `${this._color("accent_color", "Accent (fill + play icon)", "#006666")}`)}
       ${this._sec("header_lbl", "𝗔 Header Label", this._labelBlock("header_label", true))}
