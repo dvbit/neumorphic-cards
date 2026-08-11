@@ -348,6 +348,13 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         var _a;
         const el = styleEl !== null && styleEl !== void 0 ? styleEl : (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.getElementById("neu-style");
         if (!el) return;
+        // The stylesheet only depends on theme + config, NOT on entity state. Rewriting
+        // it on every hass update would restart the CSS spin animation (stutter). Skip
+        // the rewrite unless something style-relevant actually changed. `styleEl` is
+        // passed explicitly on first build, which always writes.
+        const styleSig = JSON.stringify([this._isDark, this._config]);
+        if (!styleEl && this._styleSig === styleSig) return;
+        this._styleSig = styleSig;
         const p = this._isDark ? M_DARK : M_LIGHT;
         const cfg = this._config || {};
         const sc = this.SCALE;
