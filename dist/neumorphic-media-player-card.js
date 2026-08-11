@@ -165,6 +165,20 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
             this._watchTheme();
             this._startTick();
         }
+        // Clear the optimistic overlay once the real state confirms it (server wins
+        // after the round-trip completes).
+        if (this._optimistic) {
+            const raw = this._rawStateObj;
+            if (raw) {
+                const o = this._optimistic;
+                const matches =
+                    (o.state === undefined || raw.state === o.state) &&
+                    (o.is_volume_muted === undefined || !!raw.attributes.is_volume_muted === o.is_volume_muted) &&
+                    (o.shuffle === undefined || !!raw.attributes.shuffle === o.shuffle) &&
+                    (o.repeat === undefined || (raw.attributes.repeat || "off") === o.repeat);
+                if (matches) { this._optimistic = null; if (this._optTimer) { clearTimeout(this._optTimer); this._optTimer = null; } }
+            }
+        }
         if (this.shadowRoot) { this._updateStyle(); this._render(); }
     }
 
@@ -184,6 +198,25 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
     get SCALE() { return this.KS / 340; }
 
     get _stateObj() {
+        var _a, _b;
+        const ent = this._activeEntity || ((_a = this._config) === null || _a === void 0 ? void 0 : _a.entity);
+        const raw = ent && ((_b = this._hass) === null || _b === void 0 ? void 0 : _b.states) ? this._hass.states[ent] : null;
+        if (!raw) return null;
+        // Overlay optimistic values (from a just-tapped control) so the UI reflects
+        // the expected result instantly, before the server round-trip completes.
+        if (this._optimistic) {
+            const o = this._optimistic;
+            return Object.assign({}, raw, {
+                state: o.state !== undefined ? o.state : raw.state,
+                attributes: Object.assign({}, raw.attributes,
+                    o.is_volume_muted !== undefined ? { is_volume_muted: o.is_volume_muted } : {},
+                    o.shuffle !== undefined ? { shuffle: o.shuffle } : {},
+                    o.repeat !== undefined ? { repeat: o.repeat } : {}),
+            });
+        }
+        return raw;
+    }
+    get _rawStateObj() {
         var _a, _b;
         const ent = this._activeEntity || ((_a = this._config) === null || _a === void 0 ? void 0 : _a.entity);
         return ent && ((_b = this._hass) === null || _b === void 0 ? void 0 : _b.states) ? this._hass.states[ent] : null;
@@ -219,6 +252,7 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         var _a;
         (_a = this._themeObserver) === null || _a === void 0 ? void 0 : _a.disconnect();
         if (this._tick) { clearInterval(this._tick); this._tick = null; }
+        if (this._optTimer) { clearTimeout(this._optTimer); this._optTimer = null; }
     }
 
     // ── DOM ─────────────────────────────────────────────────────────────────────
@@ -325,12 +359,38 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
         }
         if (this._config.display_only) return;
         switch (id) {
-            case "mp-play": this._svc("media_play_pause"); break;
+            case "mp-play": {
+                // Optimistic: flip the icon immediately, don't wait for the server.
+                const nowPlaying = s && s.state === "playing";
+                this._setOptimistic({ state: nowPlaying ? "paused" : "playing" });
+                this._renderTransport();
+                this._svc("media_play_pause");
+                break;
+            }
             case "mp-prev": if (this._supports(MF.PREVIOUS_TRACK)) this._svc("media_previous_track"); break;
             case "mp-next": if (this._supports(MF.NEXT_TRACK)) this._svc("media_next_track"); break;
-            case "mp-mute": { const muted = s && !!s.attributes.is_volume_muted; this._svc("volume_mute", { is_volume_muted: !muted }); break; }
-            case "mp-shuffle": { const sh = s && !!s.attributes.shuffle; this._svc("shuffle_set", { shuffle: !sh }); break; }
-            case "mp-repeat": { const r = (s && s.attributes.repeat) || "off"; const nx = r === "off" ? "all" : r === "all" ? "one" : "off"; this._svc("repeat_set", { repeat: nx }); break; }
+            case "mp-mute": {
+                const muted = s && !!s.attributes.is_volume_muted;
+                this._setOptimistic({ is_volume_muted: !muted });
+                this._renderVolume();
+                this._svc("volume_mute", { is_volume_muted: !muted });
+                break;
+            }
+            case "mp-shuffle": {
+                const sh = s && !!s.attributes.shuffle;
+                this._setOptimistic({ shuffle: !sh });
+                this._renderExtras();
+                this._svc("shuffle_set", { shuffle: !sh });
+                break;
+            }
+            case "mp-repeat": {
+                const r = (s && s.attributes.repeat) || "off";
+                const nx = r === "off" ? "all" : r === "all" ? "one" : "off";
+                this._setOptimistic({ repeat: nx });
+                this._renderExtras();
+                this._svc("repeat_set", { repeat: nx });
+                break;
+            }
             case "mp-poweron": if (this._supports(MF.TURN_ON)) this._svc("turn_on"); break;
         }
     }
@@ -786,6 +846,18 @@ class NeumorphicMediaPlayerCard extends HTMLElement {
     }
 
     // ── Services ────────────────────────────────────────────────────────────────
+    // Set an optimistic overlay for instant feedback, with a safety net that
+    // clears it if the real state never confirms (failed service call, etc.).
+    _setOptimistic(obj) {
+        this._optimistic = obj;
+        if (this._optTimer) clearTimeout(this._optTimer);
+        this._optTimer = setTimeout(() => {
+            this._optimistic = null;
+            this._optTimer = null;
+            if (this.shadowRoot) this._render();
+        }, 2500);
+    }
+
     _svc(service, data) {
         if (!this._hass || !this._config) return;
         const ent = this._activeEntity || this._config.entity;
